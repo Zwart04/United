@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.IO;
+using System.Text;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
@@ -346,6 +347,12 @@ public sealed class ServiceSlot : IDisposable
                   const whatsapp = __WHATSAPP__;
                   const settleMs = __SETTLE__;
                   const service = __SERVICE__;
+                  // WebView2 serializes postMessage objects to JSON. A lone surrogate in a
+                  // chat title (common with truncated emoji) makes .NET's strict JSON
+                  // reader reject the whole message, so normalize strings first.
+                  const wellFormed = value =>
+                    typeof value === 'string' && value.toWellFormed
+                      ? value.toWellFormed() : value;
                   let lastUnread = -1;
                   let lastRows = -1;
                   // Do not treat the first populations of the list as new messages. A slow
@@ -500,8 +507,9 @@ public sealed class ServiceSlot : IDisposable
                           // Presence lines ("Active 7m ago", "1 active today") are not messages.
                           if (/^active\b.*\b(ago|today|now)\b/i.test(body) || /^\d+\s+active\b/i.test(body)) continue;
                           window.chrome.webview.postMessage({
-                            kind: 'chat-preview', service, title, body,
-                            target: (row.getAttribute('href') || '').slice(0, 600),
+                            kind: 'chat-preview', service,
+                            title: wellFormed(title), body: wellFormed(body),
+                            target: wellFormed((row.getAttribute('href') || '').slice(0, 600)),
                             unread: publishUnread ? rowUnread : null
                           });
                         }
@@ -577,7 +585,7 @@ public sealed class ServiceSlot : IDisposable
             if (!Uri.TryCreate(e.Source, UriKind.Absolute, out var source)) return;
             if (IsExternal(Def, source.ToString())) return;
 
-            using var message = JsonDocument.Parse(e.WebMessageAsJson);
+            using var message = JsonDocument.Parse(StripInvalidSurrogates(e.WebMessageAsJson));
             var root = message.RootElement;
             if (!root.TryGetProperty("kind", out var kind)) return;
             if (!root.TryGetProperty("service", out var serviceElement) ||
@@ -616,10 +624,50 @@ public sealed class ServiceSlot : IDisposable
                     break;
             }
         }
+        catch (Exception ex) when (ex is JsonException or InvalidOperationException)
+        {
+            // A service can post a truncated emoji or a null where a number was
+            // expected. Drop that one message instead of turning it into an app error.
+            AppLog.Warn($"ignored malformed live observer message [{Def.Id}] {ex.GetType().Name}");
+        }
         catch (Exception ex)
         {
             AppLog.Exception(ex, $"reading live observer message [{Def.Id}]");
         }
+    }
+
+    /// <summary>
+    /// Replaces lone UTF-16 surrogates before strict JSON parsing. Paired
+    /// surrogates (real emoji and supplementary characters) are preserved.
+    /// </summary>
+    private static string StripInvalidSurrogates(string text)
+    {
+        StringBuilder? cleaned = null;
+        for (var i = 0; i < text.Length; i++)
+        {
+            var current = text[i];
+            if (char.IsHighSurrogate(current) &&
+                i + 1 < text.Length && char.IsLowSurrogate(text[i + 1]))
+            {
+                cleaned?.Append(current).Append(text[i + 1]);
+                i++;
+                continue;
+            }
+
+            if (char.IsSurrogate(current))
+            {
+                if (cleaned == null)
+                {
+                    cleaned = new StringBuilder(text.Length);
+                    cleaned.Append(text, 0, i);
+                }
+                cleaned.Append('\uFFFD');
+                continue;
+            }
+
+            cleaned?.Append(current);
+        }
+        return cleaned?.ToString() ?? text;
     }
 
     // OAuth providers used by the bundled services. These hosts stay in-app so the

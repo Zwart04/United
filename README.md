@@ -6,6 +6,8 @@ United adalah shell desktop berbasis **.NET 10 + WebView2** yang membuka situs r
 
 > Status: **0.1.0** · Windows 10 2004+ / Windows 11 · x64
 > UI aplikasi berbahasa Inggris; dokumentasi ini berbahasa Indonesia.
+>
+> **Unduh build portable:** [Releases](https://github.com/Zwart04/United/releases/latest) · butuh .NET 10 Desktop Runtime dan WebView2 Runtime.
 
 ![Halaman Services](docs/images/services-top.png)
 

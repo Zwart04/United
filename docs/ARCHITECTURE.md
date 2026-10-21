@@ -166,7 +166,7 @@ Catatan: file yang diedit manual akan ditulis ulang (komentar hilang) saat ada o
 - UI untuk user-agent, proxy, zoom, atau pengaturan per layanan selain JSON.
 - Sinkronisasi cloud/backup otomatis.
 - Dukungan multi-akun per layanan di UI.
-- Unread pattern Threads/Bluesky yang terverifikasi.
+- Pola unread Bluesky yang terverifikasi (Threads sudah terverifikasi dari judul).
 - Pengukuran benchmark lengkap S0–S5 dengan akun login.
 
 Lihat [KNOWN-LIMITATIONS.md](KNOWN-LIMITATIONS.md) untuk daftar lengkap.

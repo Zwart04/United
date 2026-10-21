@@ -1,0 +1,111 @@
+﻿{
+    "Label":  "1 active (WhatsApp, logged in)",
+    "Timestamp":  "2026-10-20 14:58:18",
+    "TreeProcesses":  11,
+    "WebView2Procs":  10,
+    "PrivateMB":  2125.5,
+    "WorkingSetMB":  2017.5,
+    "CpuPercent":  1.79,
+    "SampleSeconds":  20,
+    "Processes":  [
+                      {
+                          "Pid":  728,
+                          "Name":  "msedgewebview2",
+                          "Parent":  15988,
+                          "PrivateMB":  791.7,
+                          "WorkingSetMB":  635.7,
+                          "CpuSeconds":  146,
+                          "Threads":  39
+                      },
+                      {
+                          "Pid":  15552,
+                          "Name":  "msedgewebview2",
+                          "Parent":  15988,
+                          "PrivateMB":  423.1,
+                          "WorkingSetMB":  350.1,
+                          "CpuSeconds":  13.8,
+                          "Threads":  36
+                      },
+                      {
+                          "Pid":  8128,
+                          "Name":  "msedgewebview2",
+                          "Parent":  15988,
+                          "PrivateMB":  334.6,
+                          "WorkingSetMB":  238.6,
+                          "CpuSeconds":  33.6,
+                          "Threads":  29
+                      },
+                      {
+                          "Pid":  13216,
+                          "Name":  "msedgewebview2",
+                          "Parent":  15988,
+                          "PrivateMB":  310.2,
+                          "WorkingSetMB":  237,
+                          "CpuSeconds":  25.6,
+                          "Threads":  33
+                      },
+                      {
+                          "Pid":  15988,
+                          "Name":  "msedgewebview2",
+                          "Parent":  16252,
+                          "PrivateMB":  95,
+                          "WorkingSetMB":  195.9,
+                          "CpuSeconds":  153.8,
+                          "Threads":  53
+                      },
+                      {
+                          "Pid":  16252,
+                          "Name":  "United",
+                          "Parent":  15084,
+                          "PrivateMB":  71.8,
+                          "WorkingSetMB":  154.4,
+                          "CpuSeconds":  14,
+                          "Threads":  23
+                      },
+                      {
+                          "Pid":  8344,
+                          "Name":  "msedgewebview2",
+                          "Parent":  15988,
+                          "PrivateMB":  57.9,
+                          "WorkingSetMB":  85.9,
+                          "CpuSeconds":  8.4,
+                          "Threads":  22
+                      },
+                      {
+                          "Pid":  11868,
+                          "Name":  "msedgewebview2",
+                          "Parent":  15988,
+                          "PrivateMB":  21.1,
+                          "WorkingSetMB":  55.6,
+                          "CpuSeconds":  7.9,
+                          "Threads":  23
+                      },
+                      {
+                          "Pid":  16152,
+                          "Name":  "msedgewebview2",
+                          "Parent":  15988,
+                          "PrivateMB":  9.2,
+                          "WorkingSetMB":  23.7,
+                          "CpuSeconds":  0.2,
+                          "Threads":  13
+                      },
+                      {
+                          "Pid":  12592,
+                          "Name":  "msedgewebview2",
+                          "Parent":  15988,
+                          "PrivateMB":  8,
+                          "WorkingSetMB":  26.5,
+                          "CpuSeconds":  0.1,
+                          "Threads":  7
+                      },
+                      {
+                          "Pid":  8512,
+                          "Name":  "msedgewebview2",
+                          "Parent":  15988,
+                          "PrivateMB":  2.9,
+                          "WorkingSetMB":  14.1,
+                          "CpuSeconds":  0,
+                          "Threads":  8
+                      }
+                  ]
+}

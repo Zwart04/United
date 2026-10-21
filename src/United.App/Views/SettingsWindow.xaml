@@ -1,0 +1,147 @@
+﻿<Window x:Class="United.App.Views.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="United — Settings"
+        Icon="pack://application:,,,/Assets/united.ico"
+        Width="780" Height="580" MinWidth="640" MinHeight="460"
+        WindowStartupLocation="CenterOwner"
+        Style="{StaticResource AppWindow}"
+        Background="{DynamicResource BgSurface}">
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="150" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <!-- Navigation -->
+        <Border Grid.Column="0" Background="{DynamicResource BgSurface}"
+                BorderBrush="{DynamicResource Border}" BorderThickness="0,0,1,0">
+            <StackPanel Margin="8,10">
+                <RadioButton x:Name="NavGeneral" Content="General" IsChecked="True"
+                             GroupName="settingsnav" Checked="Nav_Checked" Style="{StaticResource NavButton}" />
+                <RadioButton x:Name="NavServices" Content="Services" GroupName="settingsnav"
+                             Checked="Nav_Checked" Style="{StaticResource NavButton}" />
+                <RadioButton x:Name="NavPerformance" Content="Performance" GroupName="settingsnav"
+                             Checked="Nav_Checked" Style="{StaticResource NavButton}" />
+                <RadioButton x:Name="NavAbout" Content="About" GroupName="settingsnav"
+                             Checked="Nav_Checked" Style="{StaticResource NavButton}" />
+            </StackPanel>
+        </Border>
+
+        <!-- Panels -->
+        <Grid Grid.Column="1" Margin="20,16,20,16">
+
+            <!-- ── General ─────────────────────────────── -->
+            <ScrollViewer x:Name="PanelGeneral" VerticalScrollBarVisibility="Auto" Focusable="False">
+                <StackPanel MaxWidth="520" HorizontalAlignment="Left">
+                    <TextBlock Text="General" Style="{StaticResource SectionHeader}" Margin="0,0,0,10" />
+
+                    <TextBlock Text="Appearance" FontWeight="SemiBold" Margin="0,4,0,4" />
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                        <TextBlock Text="Theme" VerticalAlignment="Center" Margin="0,0,12,0" />
+                        <ComboBox x:Name="ThemeCombo" Width="150" SelectionChanged="ThemeCombo_Changed" />
+                    </StackPanel>
+
+                    <TextBlock Text="Startup &amp; window" FontWeight="SemiBold" Margin="0,12,0,4" />
+                    <CheckBox x:Name="LaunchAtStartupCheck" Content="Launch automatically at sign-in"
+                              Checked="SettingChanged" Unchecked="SettingChanged" />
+                    <CheckBox x:Name="StartMinimizedCheck" Content="Start minimized in the tray"
+                              Checked="SettingChanged" Unchecked="SettingChanged" />
+                    <CheckBox x:Name="CloseToTrayCheck" Content="Close button hides to tray (keeps notifications alive)"
+                              Checked="SettingChanged" Unchecked="SettingChanged" />
+
+                    <TextBlock Text="Notifications" FontWeight="SemiBold" Margin="0,12,0,4" />
+                    <CheckBox x:Name="TrayBadgeCheck" Content="Show unread badge on the tray icon"
+                              Checked="SettingChanged" Unchecked="SettingChanged" />
+                    <CheckBox x:Name="SoundCheck" Content="Notification sound (host-generated toasts)"
+                              Checked="SettingChanged" Unchecked="SettingChanged" />
+                    <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                        <Button Content="Send test notification" Style="{StaticResource SecondaryButton}"
+                                Click="TestNotification_Click" />
+                        <TextBlock Style="{StaticResource MutedText}" VerticalAlignment="Center" Margin="10,0,0,0"
+                                   Text="Routes through the same toast path as service notifications." />
+                    </StackPanel>
+
+                    <TextBlock Text="Memory" FontWeight="SemiBold" Margin="0,12,0,4" />
+                    <CheckBox x:Name="AutoLowMemoryCheck"
+                              Content="Lower memory for background services (notifications keep working)"
+                              Checked="SettingChanged" Unchecked="SettingChanged" />
+                    <TextBlock Style="{StaticResource MutedText}" Margin="24,2,0,0"
+                               Text="Hibernating a service from the sidebar or tray stops it completely; it resumes on click." />
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- ── Services ────────────────────────────── -->
+            <ScrollViewer x:Name="PanelServices" Visibility="Collapsed" VerticalScrollBarVisibility="Auto" Focusable="False">
+                <StackPanel MaxWidth="620" HorizontalAlignment="Left">
+                    <TextBlock Text="Services" Style="{StaticResource SectionHeader}" Margin="0,0,0,8" />
+                    <TextBlock Style="{StaticResource MutedText}" Margin="0,0,0,8" TextWrapping="Wrap"
+                               Text="Everything below runs in isolated profiles inside this app. Notification mode: Host = the app raises the Windows toast (recommended, deduplicated); Webview = the service's own native notification; Off." />
+
+                    <TextBlock Text="Your services" FontWeight="SemiBold" Margin="0,6,0,6" />
+                    <StackPanel x:Name="ServiceRows" />
+
+                    <TextBlock Text="Add a service" FontWeight="SemiBold" Margin="0,14,0,4" />
+                    <TextBlock Style="{StaticResource MutedText}" Margin="0,0,0,6" TextWrapping="Wrap"
+                               Text="Built-in services you have not added yet, plus saved custom definitions. One click puts them back in the sidebar." />
+                    <StackPanel x:Name="AvailableRows" />
+
+                    <TextBlock Text="Add your own website" FontWeight="SemiBold" Margin="0,16,0,4" />
+                    <TextBlock Style="{StaticResource MutedText}" Margin="0,0,0,6" TextWrapping="Wrap"
+                               Text="Any https:// site can run as a service. Pick a name, paste the address and (optionally) choose a square logo." />
+                    <StackPanel Orientation="Horizontal">
+                        <Button Content="Add custom service..." Style="{StaticResource PrimaryButton}" Click="AddCustom_Click" />
+                        <Button Content="Edit services.json" Style="{StaticResource SecondaryButton}" Margin="8,0,0,0"
+                                Click="OpenServicesJson_Click" />
+                        <Button Content="Restart all" Style="{StaticResource SecondaryButton}" Margin="8,0,0,0"
+                                Click="RestartAll_Click" />
+                    </StackPanel>
+
+                    <TextBlock x:Name="ServicesHint" Style="{StaticResource MutedText}" Margin="0,12,0,0" TextWrapping="Wrap" />
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- ── Performance ─────────────────────────── -->
+            <ScrollViewer x:Name="PanelPerformance" Visibility="Collapsed" VerticalScrollBarVisibility="Auto" Focusable="False">
+                <StackPanel MaxWidth="520" HorizontalAlignment="Left">
+                    <TextBlock Text="Performance" Style="{StaticResource SectionHeader}" Margin="0,0,0,10" />
+                    <Border Background="{DynamicResource BgCard}" BorderBrush="{DynamicResource Border}"
+                            BorderThickness="1" CornerRadius="8" Padding="14,12">
+                        <StackPanel>
+                            <TextBlock x:Name="PerfHostText" Text="Host process: —" />
+                            <TextBlock x:Name="PerfWebText" Text="WebView2 tree: —" Margin="0,4,0,0" />
+                            <TextBlock x:Name="PerfCpuText" Text="CPU: —" Margin="0,4,0,0" />
+                            <TextBlock x:Name="PerfBrowserPidText" Text="Shared browser process: —" Margin="0,4,0,0" />
+                        </StackPanel>
+                    </Border>
+                    <TextBlock Text="Service states" FontWeight="SemiBold" Margin="0,14,0,6" />
+                    <Border Background="{DynamicResource BgCard}" BorderBrush="{DynamicResource Border}"
+                            BorderThickness="1" CornerRadius="8" Padding="14,10">
+                        <StackPanel x:Name="PerfServiceRows" />
+                    </Border>
+                    <TextBlock Style="{StaticResource MutedText}" Margin="0,10,0,0"
+                               Text="Inactive services run with MemoryUsageTargetLevel = Low: scripts, WebSockets and notifications stay alive while Chromium trims caches. Values are private working set (no shared-page double counting)." />
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- ── About ───────────────────────────────── -->
+            <ScrollViewer x:Name="PanelAbout" Visibility="Collapsed" VerticalScrollBarVisibility="Auto" Focusable="False">
+                <StackPanel MaxWidth="520" HorizontalAlignment="Left">
+                    <TextBlock Text="About" Style="{StaticResource SectionHeader}" Margin="0,0,0,10" />
+                    <TextBlock x:Name="AboutVersion" FontWeight="SemiBold" />
+                    <TextBlock Style="{StaticResource MutedText}" Margin="0,6,0,0"
+                               Text="Unified messenger — WhatsApp, Facebook, Instagram, Telegram, Discord, Threads and any other site, hosted in one native Windows shell with isolated sessions." />
+                    <TextBlock Text="Locations" FontWeight="SemiBold" Margin="0,14,0,6" />
+                    <TextBlock x:Name="AboutPaths" Style="{StaticResource MutedText}" />
+                    <TextBlock x:Name="AboutWebView2" Style="{StaticResource MutedText}" Margin="0,8,0,0" />
+                    <TextBlock x:Name="AboutActivation" Style="{StaticResource MutedText}" Margin="0,4,0,0" />
+                    <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
+                        <Button Content="Open data folder" Style="{StaticResource SecondaryButton}" Click="OpenDataFolder_Click" />
+                        <Button Content="Open logs" Style="{StaticResource SecondaryButton}" Margin="8,0,0,0" Click="OpenLogs_Click" />
+                    </StackPanel>
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+    </Grid>
+</Window>

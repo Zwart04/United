@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>United.App</RootNamespace>
+    <AssemblyName>United</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\united.ico</ApplicationIcon>
+    <Version>0.1.0</Version>
+    <Product>United Messenger</Product>
+    <Company>United</Company>
+    <Description>Ultra-lightweight unified desktop messenger for Windows</Description>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
+    <SelfContained>false</SelfContained>
+    <InvariantGlobalization>false</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4258.31" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\United.Core\United.Core.csproj" />
+    <ProjectReference Include="..\United.Platform.Windows\United.Platform.Windows.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Icon: used for the .exe (ApplicationIcon) and embedded so the window/tray can load it. -->
+    <Resource Include="Assets\united.ico" />
+    <None Update="Assets\**\*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

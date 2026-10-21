@@ -1,0 +1,85 @@
+{
+    "Label":  "1 active (WhatsApp) + 5 hibernated",
+    "Timestamp":  "2026-10-20T20:13:13.1023020+07:00",
+    "ExeLastWrite":  "2026-10-20T20:10:53.8465967+07:00",
+    "TreeProcesses":  8,
+    "WebView2Procs":  7,
+    "PrivateMB":  854.2,
+    "WorkingSetMB":  651,
+    "CpuPercent":  0.75,
+    "SampleSeconds":  10,
+    "Processes":  [
+                      {
+                          "Pid":  12668,
+                          "Name":  "United.exe",
+                          "ParentProcessId":  12576,
+                          "PrivateMB":  56.8,
+                          "WorkingSetMB":  135.7,
+                          "CpuSeconds":  3.4,
+                          "Threads":  27
+                      },
+                      {
+                          "Pid":  12308,
+                          "Name":  "msedgewebview2.exe",
+                          "ParentProcessId":  12668,
+                          "PrivateMB":  81.9,
+                          "WorkingSetMB":  158.5,
+                          "CpuSeconds":  9.6,
+                          "Threads":  52
+                      },
+                      {
+                          "Pid":  15064,
+                          "Name":  "msedgewebview2.exe",
+                          "ParentProcessId":  12308,
+                          "PrivateMB":  2.9,
+                          "WorkingSetMB":  10.3,
+                          "CpuSeconds":  0,
+                          "Threads":  12
+                      },
+                      {
+                          "Pid":  12436,
+                          "Name":  "msedgewebview2.exe",
+                          "ParentProcessId":  12308,
+                          "PrivateMB":  154.1,
+                          "WorkingSetMB":  131,
+                          "CpuSeconds":  2.9,
+                          "Threads":  37
+                      },
+                      {
+                          "Pid":  2412,
+                          "Name":  "msedgewebview2.exe",
+                          "ParentProcessId":  12308,
+                          "PrivateMB":  15.8,
+                          "WorkingSetMB":  43.9,
+                          "CpuSeconds":  1.9,
+                          "Threads":  27
+                      },
+                      {
+                          "Pid":  13488,
+                          "Name":  "msedgewebview2.exe",
+                          "ParentProcessId":  12308,
+                          "PrivateMB":  8.4,
+                          "WorkingSetMB":  20.4,
+                          "CpuSeconds":  0.2,
+                          "Threads":  14
+                      },
+                      {
+                          "Pid":  13868,
+                          "Name":  "msedgewebview2.exe",
+                          "ParentProcessId":  12308,
+                          "PrivateMB":  49.8,
+                          "WorkingSetMB":  73.7,
+                          "CpuSeconds":  1.4,
+                          "Threads":  22
+                      },
+                      {
+                          "Pid":  14564,
+                          "Name":  "msedgewebview2.exe",
+                          "ParentProcessId":  12308,
+                          "PrivateMB":  484.5,
+                          "WorkingSetMB":  77.5,
+                          "CpuSeconds":  24.1,
+                          "Threads":  37
+                      }
+                  ]
+}

@@ -1,0 +1,31 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Surfaces -->
+    <SolidColorBrush x:Key="BgSurface" Color="#1F1F1F" />
+    <SolidColorBrush x:Key="BgHover" Color="#2C2C2C" />
+    <SolidColorBrush x:Key="BgActive" Color="#333333" />
+    <SolidColorBrush x:Key="BgCard" Color="#272727" />
+
+    <!-- Text -->
+    <SolidColorBrush x:Key="TextPrimary" Color="#F2F2F2" />
+    <SolidColorBrush x:Key="TextMuted" Color="#9C9C9C" />
+    <SolidColorBrush x:Key="TextOnAccent" Color="#FFFFFF" />
+
+    <!-- Accents -->
+    <SolidColorBrush x:Key="Accent" Color="#4CC2FF" />
+    <SolidColorBrush x:Key="Badge" Color="#E81123" />
+
+    <!-- Lines -->
+    <SolidColorBrush x:Key="ScrollThumb" Color="#4A4A4A" />
+    <SolidColorBrush x:Key="ScrollThumbHover" Color="#6B6B6B" />
+    <SolidColorBrush x:Key="Border" Color="#333333" />
+
+    <!-- Overlays drawn above web content -->
+    <SolidColorBrush x:Key="OverlayBg" Color="#1F1F1F" />
+    <SolidColorBrush x:Key="CaptionButtonHover" Color="#2D2D2D" />
+    <SolidColorBrush x:Key="CaptionCloseHover" Color="#C42B1C" />
+
+    <system:Double x:Key="CaptionButtonWidth" xmlns:system="clr-namespace:System;assembly=System.Runtime">46</system:Double>
+
+</ResourceDictionary>

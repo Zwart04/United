@@ -1,0 +1,22 @@
+{
+    "Label":  "All 6 hibernated (cold start)",
+    "Timestamp":  "2026-10-20T20:12:06.3816976+07:00",
+    "ExeLastWrite":  "2026-10-20T20:10:53.8465967+07:00",
+    "TreeProcesses":  1,
+    "WebView2Procs":  0,
+    "PrivateMB":  52.7,
+    "WorkingSetMB":  125.1,
+    "CpuPercent":  0,
+    "SampleSeconds":  10,
+    "Processes":  [
+                      {
+                          "Pid":  8664,
+                          "Name":  "United.exe",
+                          "ParentProcessId":  12576,
+                          "PrivateMB":  52.7,
+                          "WorkingSetMB":  125.1,
+                          "CpuSeconds":  3,
+                          "Threads":  24
+                      }
+                  ]
+}

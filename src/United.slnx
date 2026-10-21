@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="../tests/United.Core.Tests/United.Core.Tests.csproj" />
+  <Project Path="United.App/United.App.csproj" />
+  <Project Path="United.Core/United.Core.csproj" />
+  <Project Path="United.Platform.Windows/United.Platform.Windows.csproj" />
+</Solution>

@@ -1,0 +1,40 @@
+# .NET build output
+**/bin/
+**/obj/
+build/
+publish/
+artifacts/
+TestResults/
+*.trx
+*.coverage
+coverage/
+
+# Visual Studio / user state
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Local United runtime data (never commit sessions or messages)
+settings.json
+services.json
+activity.json
+activity.json.bak*
+icons/
+WebData/
+logs/
+*.log
+
+# Local secrets and certificates
+.env
+.env.*
+secrets.json
+*.pfx
+*.snk
+*.key
+
+# OS metadata
+.DS_Store
+Thumbs.db
+desktop.ini

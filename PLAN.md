@@ -1,6 +1,7 @@
 # PLAN — Ultra-Lightweight Unified Desktop Messenger for Windows
 
-> Planning phase only. Title (working): **United** — one window, four messengers, one browser process.
+> Historical design document from 20 October 2026, kept for engineering context. The shipped 0.1.0 supports six built-in services; current behavior and verification are in [README.md](README.md) and [docs/VERIFICATION.md](docs/VERIFICATION.md).
+> Title (working): **United** — one window, six messengers, one browser process.
 > Version: 1.0 · Date: 2026-10-20 · Target: Windows 10 (19041+) / Windows 11
 
 ---

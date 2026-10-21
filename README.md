@@ -98,7 +98,7 @@ Klik **Edit services.json**, tambahkan objek layanan, simpan, lalu buka kembali 
 | [docs/KNOWN-LIMITATIONS.md](docs/KNOWN-LIMITATIONS.md) | Batasan dan hal yang belum diverifikasi dengan akun nyata |
 | [docs/VERIFICATION.md](docs/VERIFICATION.md) | Matriks verifikasi fitur + checklist uji manual |
 | [docs/benchmarks/](docs/benchmarks/) | Metodologi dan hasil pengukuran RAM/CPU |
-| [PLAN.md](PLAN.md) | Rencana produk dan milestone pengembangan |
+| [PLAN.md](PLAN.md) | Dokumen desain historis dan riset awal |
 
 ## Build & test
 

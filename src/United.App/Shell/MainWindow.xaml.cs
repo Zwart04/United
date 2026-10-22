@@ -184,10 +184,11 @@ public partial class MainWindow : Window
 
     private bool ShouldStartDormant(ServiceDefinition def, bool nativeWhatsAppReady)
     {
-        // A paired native bridge owns WhatsApp while its WebView is asleep. A stale
-        // persisted hibernation flag must not hide WhatsApp when the bridge is unpaired.
-        if (string.Equals(def.Id, "whatsapp", StringComparison.OrdinalIgnoreCase))
-            return nativeWhatsAppReady;
+        // A paired native bridge owns WhatsApp while its WebView is asleep.
+        // Native-induced sleep is never persisted, so a stored flag here is a
+        // deliberate user choice and must survive a restart too.
+        if (string.Equals(def.Id, "whatsapp", StringComparison.OrdinalIgnoreCase) && nativeWhatsAppReady)
+            return true;
         return _settings.HibernatedServices.Contains(def.Id, StringComparer.OrdinalIgnoreCase);
     }
 

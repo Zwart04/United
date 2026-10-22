@@ -116,6 +116,19 @@ public sealed class NativeWhatsAppBridge : IDisposable
             if (_process is { HasExited: false }) return;
             Directory.CreateDirectory(DataDirectory);
             KillStaleProcess();
+            // The helper truncates its event file on startup, but the monitor can
+            // race it and replay yesterday's previews after a restart. Truncate
+            // from the host before the monitor starts.
+            try
+            {
+                if (File.Exists(EventsPath)) File.WriteAllBytes(EventsPath, Array.Empty<byte>());
+            }
+            catch (IOException)
+            {
+                // A locked stale file will be truncated by the helper itself.
+            }
+            _eventsOffset = 0;
+            _pending.Clear();
             ReadStatusCore();
 
             var psi = new ProcessStartInfo(ExecutablePath)
@@ -307,6 +320,7 @@ public sealed class NativeWhatsAppBridge : IDisposable
         }
 
         _pending.Append(Encoding.UTF8.GetString(bytes));
+        if (_pending.Length > 0 && _pending[0] == '\uFEFF') _pending.Remove(0, 1);
         while (true)
         {
             var text = _pending.ToString();

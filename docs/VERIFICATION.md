@@ -86,7 +86,7 @@ Skrip: `tools/verify-ui.ps1` + UI Automation (PowerShell), screenshot via `Print
 | Race snapshot vs sapuan interval | sapuan non-emit hanya mengisi baris baru, tidak menimpa snapshot lama; event Threads yang sempat hilang langsung terkirim | ✅ (diperbaiki 21 Okt) |
 | Badge unread sidebar | screenshot: WhatsApp 98, Facebook 20 `(20+)`, Telegram 12, Discord 0 (bukan 2/29759), Threads 1 (dari judul `(1) Messages • Threads`); All messages 29 (saat uji) | ✅ |
 | Badge per baris vs judul | Telegram/Facebook dihitung per baris percakapan; Discord memakai ikon Direct Messages (judul `(29761)` = mention server, bukan DM); Instagram/Threads memakai angka dari `document.title` | ✅ |
-| Build hybrid 0.2.0 (22 Okt) | publish Release win-x64; `United.WhatsAppBridge.exe` 16.431.616 byte; ZIP `build/United-portable-win-x64.zip` 13.270.428 byte / 22 entry, SHA-256 `23A75F62C47A9E96F36BF03B3BE8982AE9029F1D1378C75EE5F7774385298C1C`; ekstrak ZIP lalu start: app hidup, bridge hidup, status `pairing`, QR 420x420 RGB; 55/55 test | OK |
+| Build hybrid 0.2.0 (22 Okt) | publish Release win-x64; `United.WhatsAppBridge.exe` 16.431.616 byte; ZIP `build/United-portable-win-x64.zip` 13.270.514 byte / 22 entry, SHA-256 `7E58F499745259089E1652EA004D1D37350D183CB749780AB783E838326B3E15`; ekstrak ZIP lalu start: app hidup, bridge hidup, status `pairing`, QR 420x420 RGB; 55/55 test | OK |
 | Build final portable (21 Okt) | publish 13:03 dari source final; `United.dll` 229888 byte; ZIP `build/United-portable-win-x64.zip` 6.80 MB / 21 entry, SHA-256 `31A742C053CB150FFD2D533981D8CBA0F1852998E0443125EA94892F285F89E0`; string `--remote-debugging-port`/`9222` **tidak ada** di `United.dll`/`United.exe`; port 9222 = 0 saat app berjalan; start 13:03 dari folder publish → 6 observer terpasang, WhatsApp `live rows 19`, tidak ada error/warn | ✅ |
 | Payload observer rusak (21 Okt) | JS memakai `String.prototype.toWellFormed` sebelum `postMessage`; host menyanitasi lone surrogate sebelum `JsonDocument.Parse`; field angka memakai `TryGetInt32` sehingga null diabaikan; build 0 warning/0 error; run final 13:03 tanpa ERROR/WARN | ✅ kode siap; belum ada event malformed baru |
 | Observer WhatsApp DOM (21 Okt) | `#pane-side` + 19 baris `cell-frame-container`; observer dipasang terlambat lewat `MutationObserver` setelah daftar muncul; log `live rows [whatsapp] 19`; judul dan preview dibaca dari span ber-`title`, bukan teks baris yang diawali label unread; dua perubahan preview nyata pukul 13:05:03 dan 13:05:16 tercatat `live activity observed` + `stored` (judul disamarkan) | ✅ |
@@ -181,11 +181,14 @@ Diuji pada build Release 0.2.0, Windows 10 19045, 22 Oktober 2026.
 | Dialog pairing | QR tampil di window; Refresh QR membuat QR baru; status pairing | Lulus |
 | Fallback saat belum pairing | WhatsApp WebView tetap dibuat dan dipakai normal | Lulus |
 | Pairing akun nyata | belum dilakukan; butuh scan dari ponsel pengguna | Belum |
-| Pesan native masuk ke All messages | belum diuji dengan akun terpasang | Belum |
+| Event JSONL saat WhatsApp dormant | event uji (`Native Test`) ditulis ke `events.jsonl`; log `native WhatsApp message stored [Native Test]`; `activity.json` menyimpan baris | Lulus (synthetic) |
+| Restart tidak memutar preview lama | run pertama menyimpan event; restart kedua menambah 0 baris `stored`; `events.jsonl` 0 byte | Lulus |
+| Pesan nyata via pairing | belum diuji dengan akun terpasang | Belum |
 | WebView WhatsApp hibernasi setelah pairing | logika sudah ada; belum diverifikasi end-to-end | Belum |
 | RAM setelah pairing | belum diukur; perbandingan hibernate WhatsApp sebelumnya: private 2433.5 -> 1531.9 MB, working set 2880.8 -> 1895.4 MB | Belum (pairing) |
 
 Catatan: QR yang ditampilkan saat verifikasi tidak disimpan ke repo karena dapat dipakai untuk menautkan perangkat. Jangan commit qr.png, session.db, events.jsonl, atau status.json.
+
 ## 5. Cara menjalankan ulang verifikasi UI
 
 ```powershell

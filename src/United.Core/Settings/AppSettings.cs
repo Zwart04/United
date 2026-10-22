@@ -43,6 +43,12 @@ public sealed class AppSettings
     /// <summary>Put non-focused services into low-memory mode automatically.</summary>
     public bool AutoLowMemory { get; set; } = true;
 
+    /// <summary>
+    /// Use the bundled native WhatsApp bridge for background notifications. The
+    /// WhatsApp WebView is only kept asleep after the bridge has a linked device.
+    /// </summary>
+    public bool NativeWhatsAppEnabled { get; set; } = true;
+
     /// <summary>Window geometry (persisted for a native feel across restarts).</summary>
     public double WindowLeft { get; set; } = double.NaN;
     public double WindowTop { get; set; } = double.NaN;

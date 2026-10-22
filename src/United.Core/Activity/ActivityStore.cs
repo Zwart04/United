@@ -149,6 +149,21 @@ public sealed class ActivityStore
         Changed?.Invoke();
     }
 
+    /// <summary>Unread count for one service, used by native sources that have no page badge.</summary>
+    public int UnreadFor(string serviceId)
+    {
+        lock (_gate)
+        {
+            var total = 0;
+            foreach (var e in _entries)
+            {
+                if (!string.Equals(e.ServiceId, serviceId, StringComparison.OrdinalIgnoreCase)) continue;
+                total += Math.Max(0, e.Count);
+            }
+            return total;
+        }
+    }
+
     public void MarkRead(string serviceId, string title)
     {
         var changed = false;

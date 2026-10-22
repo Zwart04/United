@@ -1,0 +1,53 @@
+<Window x:Class="United.App.Views.NativeWhatsAppPairingWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="United — Native WhatsApp"
+        Icon="pack://application:,,,/Assets/united.ico"
+        Width="520" Height="720" MinWidth="440" MinHeight="560"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        Style="{StaticResource AppWindow}"
+        Background="{DynamicResource BgSurface}">
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="Pair native WhatsApp"
+                   Style="{StaticResource SectionHeader}" />
+
+        <TextBlock Grid.Row="1" x:Name="StatusText" Margin="0,6,0,12"
+                   TextWrapping="Wrap" Foreground="{DynamicResource TextMuted}"
+                   Text="Starting the native bridge..." />
+
+        <Border Grid.Row="2" Background="{DynamicResource BgCard}"
+                BorderBrush="{DynamicResource Border}" BorderThickness="1"
+                CornerRadius="10" Padding="16">
+            <Grid>
+                <Image x:Name="QrImage" Width="360" Height="360"
+                       Stretch="Uniform" HorizontalAlignment="Center"
+                       VerticalAlignment="Center" />
+                <TextBlock x:Name="QrPlaceholder" Text="QR code will appear here"
+                           Foreground="{DynamicResource TextMuted}"
+                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                           TextWrapping="Wrap" TextAlignment="Center" />
+            </Grid>
+        </Border>
+
+        <StackPanel Grid.Row="3" Margin="0,14,0,0">
+            <TextBlock x:Name="HintText" TextWrapping="Wrap"
+                       Foreground="{DynamicResource TextMuted}"
+                       Text="On your phone: WhatsApp > Settings > Linked devices > Link a device, then scan this code." />
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
+                <Button Content="Refresh QR" Style="{StaticResource SecondaryButton}"
+                        Click="Refresh_Click" />
+                <Button Content="Close" Style="{StaticResource PrimaryButton}"
+                        Margin="8,0,0,0" Click="Close_Click" />
+            </StackPanel>
+        </StackPanel>
+    </Grid>
+</Window>

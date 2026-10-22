@@ -37,8 +37,8 @@ United.Platform.Windows (net10.0-windows)
 United.App (WPF, WinExe, x64)
   ├─ App.xaml.cs (composition root)
   ├─ Shell/MainWindow, SidebarItem, IconStore
-  ├─ Web/ServiceSlot, NotificationRouter, PermissionBroker
-  ├─ Views/SettingsWindow, AddServiceWindow
+  ├─ Web/ServiceSlot, NotificationRouter, PermissionBroker, NativeWhatsAppBridge
+  ├─ Views/SettingsWindow, AddServiceWindow, NativeWhatsAppPairingWindow
   ├─ Services/CustomServicesFile
   └─ Themes/, Resources/BrandIcons.xaml, Styles.xaml
 ```
@@ -52,6 +52,8 @@ Dependensi eksternal: `Microsoft.Web.WebView2` (NuGet) dan WinRT toast APIs. Tid
 3. Memuat `settings.json`; menerapkan tema; memulai `ThemeWatcher`.
 4. Membuat `MainWindow` (shell + sidebar kosong), menampilkan window kecuali `--minimized`.
 5. `MainWindow.InitializeAsync`:
+   - memulai helper native WhatsApp (jika diaktifkan); helper menulis `status.json`/`qr.png`/`events.jsonl`;
+   - memakai status `paired` untuk memutuskan apakah WebView WhatsApp hibernasi;
    - memuat definisi dari `ServiceCatalog.Resolve(enabledServices, servicesJson)`,
    - membuat `ServiceSlot` untuk tiap layanan,
    - membuat WebView layanan aktif terlebih dahulu, lalu layanan lain secara bertahap (kecuali yang berstatus hibernated),
@@ -159,6 +161,7 @@ Catatan: file yang diedit manual akan ditulis ulang (komentar hilang) saat ada o
 | Data-driven service | Tambah layanan tanpa kode | Perilaku situs khusus harus diakali lewat field JSON (UA, auth hosts) |
 | Toast Host default | Routing & dedupe konsisten | Perlu AUMID/shortcut valid; toast click belum teruji end-to-end |
 | Ikon vektor XAML | Kecil, tajam, tanpa aset raster | Menambah brand butuh generator + rebuild; pengguna memakai PNG override |
+| Native WhatsApp opsional | WebView WhatsApp menyumbang ~900 MB private; helper Go/whatsmeow hanya ~56 MB | Library tidak resmi, butuh pairing QR, berisiko pembatasan akun; fallback ke WebView |
 
 ## 12. Yang belum ada
 

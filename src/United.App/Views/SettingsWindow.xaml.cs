@@ -96,6 +96,8 @@ public partial class SettingsWindow : Window
         TrayBadgeCheck.IsChecked = _settings.ShowTrayBadge;
         SoundCheck.IsChecked = _settings.NotificationSound;
         AutoLowMemoryCheck.IsChecked = _settings.AutoLowMemory;
+        NativeWhatsAppCheck.IsChecked = _settings.NativeWhatsAppEnabled;
+        RefreshNativeWhatsAppStatus();
         _loading = false;
     }
 
@@ -131,11 +133,94 @@ public partial class SettingsWindow : Window
         _settings.NotificationSound = SoundCheck.IsChecked == true;
         _settings.AutoLowMemory = AutoLowMemoryCheck.IsChecked == true;
 
+        var nativeEnabled = NativeWhatsAppCheck.IsChecked == true;
+        if (nativeEnabled != _settings.NativeWhatsAppEnabled)
+            _host.SetNativeWhatsAppEnabled(nativeEnabled);
+        else
+            _settings.NativeWhatsAppEnabled = nativeEnabled;
+
         if (Environment.ProcessPath is { } exe)
             Autostart.SetEnabled(_settings.LaunchAtStartup, exe, _settings.StartMinimized);
 
         _host.ApplyMemoryPolicy();
         _store.Save(_settings);
+        RefreshNativeWhatsAppStatus();
+    }
+
+    private void PairNativeWhatsApp_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_host.NativeWhatsApp.IsAvailable)
+        {
+            MessageBox.Show(this,
+                "United.WhatsAppBridge.exe is missing from this build.\n\n" +
+                "Install the release package again, or rebuild the native bridge.",
+                "United - native WhatsApp", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        if (!_settings.NativeWhatsAppEnabled)
+        {
+            NativeWhatsAppCheck.IsChecked = true; // triggers SetNativeWhatsAppEnabled
+        }
+
+        _host.NativeWhatsApp.Start();
+        var window = new NativeWhatsAppPairingWindow(_host.NativeWhatsApp) { Owner = this };
+        window.ShowDialog();
+        RefreshNativeWhatsAppStatus();
+        BuildServiceRows();
+    }
+
+    private void ForgetNativeWhatsApp_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_host.NativeWhatsApp.IsAvailable) return;
+        var answer = MessageBox.Show(this,
+            "Remove the native WhatsApp link and its local session?\n\n" +
+            "The normal WhatsApp WebView will be used again. You can pair it later.",
+            "United - native WhatsApp", MessageBoxButton.YesNo, MessageBoxImage.Question);
+        if (answer != MessageBoxResult.Yes) return;
+
+        _host.NativeWhatsApp.Forget();
+        var item = _host.Items.FirstOrDefault(i =>
+            string.Equals(i.Id, "whatsapp", StringComparison.OrdinalIgnoreCase));
+        if (item is { IsDormant: true })
+        {
+            item.IsDormant = false;
+            _ = item.Slot.CreateAsync();
+        }
+        RefreshNativeWhatsAppStatus();
+        BuildServiceRows();
+    }
+
+    private void RefreshNativeWhatsAppStatus()
+    {
+        if (NativeWhatsAppStatus is null || NativeWhatsAppPairButton is null) return;
+
+        var bridge = _host.NativeWhatsApp;
+        NativeWhatsAppPairButton.IsEnabled = bridge.IsAvailable && _settings.NativeWhatsAppEnabled;
+        if (!bridge.IsAvailable)
+        {
+            NativeWhatsAppStatus.Text =
+                "Native bridge not found in this build. WhatsApp continues in the normal WebView.";
+            return;
+        }
+        if (!_settings.NativeWhatsAppEnabled)
+        {
+            NativeWhatsAppStatus.Text = "Native collection is off; WhatsApp runs in its WebView.";
+            return;
+        }
+
+        var status = bridge.Status;
+        NativeWhatsAppStatus.Text = status.State switch
+        {
+            "connected" => "Connected natively. The WhatsApp WebView stays asleep until you open a chat.",
+            "pairing" => "Waiting for the QR scan on your phone (WhatsApp > Linked devices).",
+            "pairing_timeout" => "The QR expired. Open the pairing window again for a fresh code.",
+            "disconnected" => "Paired, reconnecting to WhatsApp...",
+            "logged_out" => "The phone unlinked this device. Pair again to resume native collection.",
+            "error" => "Native bridge error: " + (status.Error ?? "unknown"),
+            "stopped" => "Native bridge stopped. Reopen Settings or restart United to retry.",
+            _ => status.Paired ? "Paired, waiting for connection..." : "Waiting for pairing.",
+        };
     }
 
     // ── Services ───────────────────────────────────────────────────
@@ -529,6 +614,8 @@ public partial class SettingsWindow : Window
                 if (_stateLabels.TryGetValue(item.Id, out var label))
                     label.Text = $"state {StateLabel(item.Slot.State)}  ·  id {item.Id}";
             }
+
+            RefreshNativeWhatsAppStatus();
         }
         catch
         {

@@ -2,9 +2,9 @@
 
 Satu aplikasi Windows yang ringan untuk **WhatsApp, Facebook, Instagram, Telegram, Discord, Threads** — plus layanan lain yang Anda tambahkan sendiri (X, Messenger, Reddit, LinkedIn, Bluesky, YouTube, atau situs apa pun).
 
-United adalah shell desktop berbasis **.NET 10 + WebView2** yang membuka situs resmi setiap layanan di profil terisolasi. Sesi login tersimpan, notifikasi memakai toast Windows asli, sidebar dibuat minimal, dan ada mode hemat memori. Tidak ada backend cloud, tidak ada API tidak resmi, dan tidak ada data yang dikirim ke pihak ketiga selain situs layanan itu sendiri.
+United adalah shell desktop berbasis **.NET 10 + WebView2** yang membuka situs resmi setiap layanan di profil terisolasi. Sesi login tersimpan, notifikasi memakai toast Windows asli, sidebar dibuat minimal, dan ada mode hemat memori. Tidak ada backend cloud dan tidak ada data yang dikirim ke pihak ketiga selain situs layanan itu sendiri. Sejak 0.2.0, WhatsApp punya **mode native opsional** (hybrid): helper `whatsmeow` mengumpulkan preview saat WebView WhatsApp tidur, lalu WebView bangun hanya ketika Anda membuka chat untuk membaca/membalas.
 
-> Status: **0.1.0** · Windows 10 2004+ / Windows 11 · x64
+> Status: **0.2.0** · Windows 10 2004+ / Windows 11 · x64
 > UI aplikasi berbahasa Inggris; dokumentasi ini berbahasa Indonesia.
 >
 > **Unduh build portable:** [Releases](https://github.com/Zwart04/United/releases/latest) · butuh .NET 10 Desktop Runtime dan WebView2 Runtime.
@@ -15,6 +15,7 @@ United adalah shell desktop berbasis **.NET 10 + WebView2** yang membuka situs r
 
 - **6 layanan bawaan**: WhatsApp, Facebook, Instagram, Telegram, Discord, Threads.
 - **6 layanan opsional sekali klik**: X, Messenger, Reddit, LinkedIn, Bluesky, YouTube.
+- **WhatsApp hybrid (0.2.0)**: setelah scan QR sekali di Settings, WhatsApp WebView tetap tidur dan pesan masuk tetap tampil di All messages. Klik chat untuk membangunkan WebView resmi dan membalas. Ini menghemat sekitar **900 MB private / 985 MB working set** pada mesin uji (lihat [docs/VERIFICATION.md](docs/VERIFICATION.md)).
 - **Tambah situs apa pun** lewat dialog (nama, URL, logo, mode notifikasi) atau `services.json`.
 - **Logo bisa diganti sendiri** per layanan — PNG/JPG/ICO/BMP/GIF, dinormalisasi ke PNG maksimal 256 px. Lihat [docs/LOGOS.md](docs/LOGOS.md).
 - **Sesi terisolasi** per layanan; login sekali, tetap tersimpan setelah restart.
@@ -53,6 +54,16 @@ build\United-portable-win-x64\United.exe
 ```
 
 Saat pertama dibuka, sidebar berisi 6 layanan. Klik ikon layanan, lalu login seperti di browser biasa. Untuk WhatsApp, pindai QR dari ponsel. Setelah login, sesi tersimpan di `%LOCALAPPDATA%\United\WebData`.
+
+### Mengaktifkan mode native WhatsApp (opsional)
+
+1. Buka **Settings** (gear kiri bawah) > **General** > **Native WhatsApp**.
+2. Klik **Pair native WhatsApp...**, lalu pindai QR di ponsel: **WhatsApp > Linked devices > Link a device**.
+3. Setelah status **Connected**, tutup dialog. WhatsApp WebView akan tidur saat tidak dipakai; pesan baru tetap masuk ke **All messages** dan toast Windows.
+4. Klik baris WhatsApp di All messages (atau ikon WhatsApp) untuk membangunkan WebView resmi saat ingin membaca/membalas.
+5. Untuk kembali sepenuhnya ke WebView: **Settings > General > Forget native pairing**.
+
+Helper native memakai library tidak resmi `whatsmeow`; lihat peringatan di [docs/KNOWN-LIMITATIONS.md](docs/KNOWN-LIMITATIONS.md). Jika helper hilang, belum dipasangkan, atau gagal, United otomatis memakai WhatsApp WebView biasa.
 
 **Penting:** tutup jendela dengan tombol **X** akan menyembunyikan aplikasi ke tray (default), bukan keluar. Keluar sepenuhnya lewat menu tray → **Quit**, atau matikan opsi close-to-tray di Settings.
 
@@ -126,14 +137,21 @@ dotnet publish src\United.App\United.App.csproj -c Release -r win-x64 --self-con
   -o build\United-selfcontained-win-x64
 ```
 
+Native WhatsApp helper (butuh Go + C compiler; hasilnya ikut tercopy saat publish):
+
+```powershell
+.\tools\build-native.ps1
+```
+
 ## Struktur repo
 
 ```
 src/United.Core              model layanan, settings, notifikasi, logika murni + unit test
 src/United.Platform.Windows  WebView2, toast, tray, autostart, deep link, metrics
 src/United.App               WPF shell, sidebar, Settings, dialog, tema, ikon brand
-tests/United.Core.Tests      xUnit (54 test)
-tools/                       generator logo/ikon, skrip verifikasi UI
+native/whatsapp-bridge       helper Go/whatsmeow untuk preview WhatsApp native
+tests/United.Core.Tests      xUnit (55 test)
+tools/                       generator logo/ikon, build native, skrip verifikasi UI
 docs/                        tutorial, referensi logo, arsitektur, benchmark
 ```
 
@@ -147,6 +165,7 @@ Semua data lokal di `%LOCALAPPDATA%\United`:
 | `services.json` | definisi layanan kustom |
 | `icons\` | logo kustom per layanan |
 | `WebData\` | profil WebView2 (cookie, sesi login, cache) |
+| `WhatsAppNative\` | sesi companion WhatsApp native, preview JSONL, status, QR, log helper |
 | `logs\` | log harian untuk troubleshooting |
 
 Tidak ada telemetri, akun cloud, atau server perantara. Aplikasi hanya menghubungi situs layanan yang Anda buka. Izin web: notifikasi dan penyimpanan persisten diizinkan; kamera/mikrofon hanya dari origin layanan itu sendiri; clipboard-read dan izin lain ditolak. Detail dan implikasi privasi ada di tutorial.
@@ -159,7 +178,9 @@ Kode aplikasi: MIT (lihat [LICENSE](LICENSE)). Paket pihak ketiga: .NET 10, WPF,
 
 ## Batasan penting
 
-- Ini **bukan** klien API resmi. Semua interaksi terjadi di halaman web resmi; ToS tiap layanan tetap berlaku.
+- Ini **bukan** klien API resmi. Lima layanan lain tetap memakai halaman web resmi; ToS tiap layanan tetap berlaku.
+- Mode native WhatsApp memakai `whatsmeow`, library **tidak resmi**. Menautkan perangkat dengan cara ini berisiko pembatasan akun WhatsApp. Gunakan hanya jika Anda menerima risiko tersebut; WebView resmi tetap tersedia sebagai fallback.
+- Preview native WhatsApp hanya berisi teks/ringkasan media, bukan riwayat lengkap. Pesan yang diterima saat helper mati, belum dipasangkan, atau sedang reconnect tidak dapat dipulihkan.
 - Notifikasi dan badge bergantung pada dukungan situs serta markup yang dapat berubah. Badge Threads sudah terverifikasi dari judul `(n) Messages • Threads`; Bluesky belum. Instagram tidak menampilkan angka unread di inbox sehingga badge-nya berupa titik/0.
 - Enam layanan bawaan sudah dipakai dengan akun nyata. Notifikasi nyata end-to-end baru terbukti untuk Telegram dan WhatsApp; empat layanan lain diverifikasi lewat observer DOM dengan perubahan DOM terkontrol, belum dengan pesan masuk dari akun lain.
 - End-to-end toast click routing belum diuji dengan notifikasi nyata.

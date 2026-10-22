@@ -1,6 +1,6 @@
 # Tutorial Lengkap United Messenger
 
-**Versi 0.1.0** · diperbarui 20 Oktober 2026 · Windows 10 2004+ / Windows 11 (x64)
+**Versi 0.2.0** · diperbarui 22 Oktober 2026 · Windows 10 2004+ / Windows 11 (x64)
 
 Tutorial ini menjelaskan cara memakai United dari nol: login, menambah layanan, mengganti logo, mengatur notifikasi, menghemat RAM, sampai troubleshooting. Semua label UI ditulis apa adanya (UI aplikasi berbahasa Inggris) dengan penjelasan dalam bahasa Indonesia.
 
@@ -549,6 +549,17 @@ Angka adalah **private working set**; RAM yang dipakai bersama tidak dihitung du
 4. Hindari menambah puluhan layanan; setiap layanan = renderer.
 5. Restart all setelah pemakaian lama untuk membersihkan cache halaman.
 
+### 11.6 Mode native WhatsApp (opsional)
+
+Sejak 0.2.0, WhatsApp bisa tetap mengirim preview saat WebView-nya tidur:
+
+1. **Settings > General > Native WhatsApp** > **Pair native WhatsApp...**
+2. Pindai QR dari ponsel: **WhatsApp > Linked devices > Link a device**.
+3. Tunggu status **Connected**. Tutup dialog.
+4. Pesan baru masuk ke **All messages** dan toast. Klik baris/ikon WhatsApp untuk membangunkan WebView resmi dan membalas.
+5. **Forget native pairing** menghapus sesi native dan kembali ke WebView biasa.
+
+Helper memakai whatsmeow (tidak resmi). Risiko pembatasan akun ada; lihat [KNOWN-LIMITATIONS.md](KNOWN-LIMITATIONS.md). Jika helper tidak ada/gagal, WhatsApp WebView tetap dipakai otomatis.
 ---
 
 ## 12. Tema, startup, tray, dan shortcut

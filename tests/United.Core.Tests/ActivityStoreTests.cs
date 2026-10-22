@@ -70,6 +70,23 @@ public sealed class ActivityStoreTests : IDisposable
     }
 
     [Fact]
+    public void UnreadFor_SumsOnlyTheRequestedService()
+    {
+        var store = new ActivityStore(_path);
+        var t0 = new DateTimeOffset(2026, 10, 20, 10, 0, 0, TimeSpan.Zero);
+        store.Add("whatsapp", "WhatsApp", "whatsapp", "Ibu", "a", t0);
+        store.Add("whatsapp", "WhatsApp", "whatsapp", "Bapak", "b", t0.AddMinutes(1));
+        store.Add("telegram", "Telegram", "telegram", "Ibu", "c", t0.AddMinutes(2));
+
+        Assert.Equal(2, store.UnreadFor("whatsapp"));
+        Assert.Equal(1, store.UnreadFor("telegram"));
+        Assert.Equal(0, store.UnreadFor("discord"));
+
+        store.MarkRead("whatsapp", "Ibu");
+        Assert.Equal(1, store.UnreadFor("whatsapp"));
+    }
+
+    [Fact]
     public void Add_StoresTargetAndUsesAuthoritativeUnread()
     {
         var store = new ActivityStore(_path);

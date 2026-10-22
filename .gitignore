@@ -9,6 +9,11 @@ TestResults/
 *.coverage
 coverage/
 
+# Native helper build output (the Go source is committed; release zip carries the exe)
+native/whatsapp-bridge/United.WhatsAppBridge.exe
+native/whatsapp-bridge/*.db
+native/whatsapp-bridge/*.log
+
 # Visual Studio / user state
 .vs/
 *.user

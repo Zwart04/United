@@ -11,7 +11,7 @@
     <AssemblyName>United</AssemblyName>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Assets\united.ico</ApplicationIcon>
-    <Version>0.1.0</Version>
+    <Version>0.2.0</Version>
     <Product>United Messenger</Product>
     <Company>United</Company>
     <Description>Ultra-lightweight unified desktop messenger for Windows</Description>
@@ -34,6 +34,14 @@
     <!-- Icon: used for the .exe (ApplicationIcon) and embedded so the window/tray can load it. -->
     <Resource Include="Assets\united.ico" />
     <None Update="Assets\**\*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup Condition="Exists('..\..\native\whatsapp-bridge\United.WhatsAppBridge.exe')">
+    <!-- Optional native helper. Build it with tools\build-native.ps1 before publish. -->
+    <None Include="..\..\native\whatsapp-bridge\United.WhatsAppBridge.exe"
+          Link="United.WhatsAppBridge.exe"
+          CopyToOutputDirectory="PreserveNewest"
+          CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

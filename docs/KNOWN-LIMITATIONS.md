@@ -1,12 +1,13 @@
 # Batasan yang Diketahui
 
-Dokumen ini jujur tentang apa yang **belum** berfungsi, belum diuji, atau memang di luar cakupan United 0.1.0. Tanggal: **21 Oktober 2026**.
+Dokumen ini jujur tentang apa yang **belum** berfungsi, belum diuji, atau memang di luar cakupan United 0.2.0. Tanggal: **22 Oktober 2026**.
 
 ## Ringkasan status
 
 | Area | Status |
 |---|---|
-| Build & unit test | ✅ 0 warning/error; 54/54 test |
+| Build & unit test | ✅ 0 warning/error; 55/55 test |
+| Native WhatsApp (0.2.0) | belum diverifikasi end-to-end: helper dan QR sudah nyata, pairing akun + ukur RAM setelah pairing belum |
 | 6 layanan default + Facebook | ✅ tampil, halaman login WhatsApp/Facebook terverifikasi |
 | Migrasi settings lama → Facebook | ✅ unit test |
 | Tambah/hapus layanan kustom | ✅ diuji end-to-end (service uji “Test Chat”, sudah dibersihkan) |
@@ -25,10 +26,11 @@ Dokumen ini jujur tentang apa yang **belum** berfungsi, belum diuji, atau memang
 ## 1. Batasan produk
 
 1. **Bukan klien resmi.** United membuka situs resmi di WebView2. semua ToS, batas perangkat, dan kebijakan layanan tetap berlaku.
-2. **Tidak ada API, self-bot, atau ekstraksi token.** Aplikasi tidak membaca/menyadap sesi di luar mekanisme browser biasa.
+2. **Tidak ada self-bot atau ekstraksi token WebView.** Lima layanan memakai halaman web resmi. WhatsApp punya **mode native opsional** yang memakai library tidak resmi `whatsmeow`; ini bukan API resmi WhatsApp dan berisiko pembatasan akun.
 3. **Satu profil per id layanan.** Tidak ada UI multi-akun. Akun ganda hanya mungkin dengan definisi kustom duplikat (URL sama, id berbeda) — belum diuji dengan akun nyata.
 4. **Ketergantungan pada situs.** Jika situs mengubah judul, notifikasi, atau memblokir WebView2, fitur bisa berhenti sampai definisi diperbarui.
 5. **Bukan pengganti aplikasi native.** Panggilan/video, DRM, dan fitur perangkat tertentu bergantung pada dukungan WebView2 dan situs; tidak ada jaminan.
+6. **Native WhatsApp butuh pairing dan helper.** QR harus dipindai sekali; preview hanya datang selama helper hidup dan terhubung. Jika helper hilang, belum dipasangkan, atau crash, United memakai WebView biasa.
 
 ## 2. Keterbatasan notifikasi
 
@@ -38,6 +40,7 @@ Dokumen ini jujur tentang apa yang **belum** berfungsi, belum diuji, atau memang
 - Deduplikasi memakai jeda waktu; notifikasi beruntun dengan isi sama bisa ditekan.
 - **Klik toast belum diverifikasi end-to-end.** Protokol `united://open/<id>` terdaftar dan routing diimplementasikan, tetapi belum diuji dengan notifikasi nyata.
 - **Timestamp notifikasi WebView2** datang sebagai jam UTC dengan `Kind=Unspecified`. Sejak 21 Okt 2026 United menormalkannya ke instant terdekat, jadi pesan baru tidak lagi mundur sebesar offset zona waktu. Entri WhatsApp lama yang tersimpan `+07:00` dimigrasi sekali; file cadangan mengikuti pola `activity.json.bak-*`.
+- **Mode native WhatsApp** hanya mengirim preview teks/ringkasan media dari event whatsmeow; riwayat lengkap, pesan yang terlewat saat helper mati, dan status baca tidak diimpor. Full chat tetap di WebView.
 - **All messages WhatsApp memakai notifikasi web + observer DOM.** Observer membaca judul dan preview baris di `#pane-side` hanya setelah snapshot awal. Chat yang di-mute, notifikasi WhatsApp Web yang dimatikan, atau pesan yang tidak mengubah preview tetap bisa terlewat. Notifikasi tidak membawa href, sehingga klik baris memakai pencocokan judul, bukan target exact seperti Discord.
 - Windows Focus Assist, pengaturan notifikasi per aplikasi, dan mode senyap dapat menekan toast di luar kendali aplikasi.
 - Suara hanya untuk toast Host; mode Webview mengikuti situs/Windows.

@@ -69,6 +69,20 @@
                               Checked="SettingChanged" Unchecked="SettingChanged" />
                     <TextBlock Style="{StaticResource MutedText}" Margin="24,2,0,0"
                                Text="Hibernating a service from the sidebar or tray stops it completely; it resumes on click." />
+
+                    <TextBlock Text="Native WhatsApp" FontWeight="SemiBold" Margin="0,14,0,4" />
+                    <CheckBox x:Name="NativeWhatsAppCheck"
+                              Content="Collect WhatsApp messages natively (lighter; scan one QR code)"
+                              Checked="SettingChanged" Unchecked="SettingChanged" />
+                    <TextBlock x:Name="NativeWhatsAppStatus" Style="{StaticResource MutedText}"
+                               Margin="24,2,0,0" TextWrapping="Wrap"
+                               Text="Native bridge status will appear here." />
+                    <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                        <Button x:Name="NativeWhatsAppPairButton" Content="Pair native WhatsApp..."
+                                Style="{StaticResource SecondaryButton}" Click="PairNativeWhatsApp_Click" />
+                        <Button Content="Forget native pairing" Style="{StaticResource SecondaryButton}"
+                                Margin="8,0,0,0" Click="ForgetNativeWhatsApp_Click" />
+                    </StackPanel>
                 </StackPanel>
             </ScrollViewer>
 

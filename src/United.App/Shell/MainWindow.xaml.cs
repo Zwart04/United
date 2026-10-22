@@ -38,6 +38,8 @@ public partial class MainWindow : Window
     private readonly ProcessMetricsCollector _metrics;
     private readonly NotificationRouter _router;
     private readonly ToastService _toasts;
+    private readonly NativeWhatsAppBridge _nativeWhatsApp;
+    private readonly NotificationGate _nativeWhatsAppGate = new();
     private readonly BadgeState _badges = new();
     private readonly ActivityStore _activity = new(ActivityStore.DefaultPath);
     private readonly ObservableCollection<ActivityRow> _activityRows = new();
@@ -60,6 +62,7 @@ public partial class MainWindow : Window
     public event Action<int>? UnreadTotalChanged;
 
     public AppSettings Settings => _settings;
+    public NativeWhatsAppBridge NativeWhatsApp => _nativeWhatsApp;
     public SettingsStore Store => _store;
     public ThemeManager Theme => _theme;
     public ThemeWatcher Watcher => _watcher;
@@ -77,6 +80,10 @@ public partial class MainWindow : Window
         _watcher = watcher;
         _metrics = metrics;
         _toasts = toasts;
+
+        _nativeWhatsApp = new NativeWhatsAppBridge(settings);
+        _nativeWhatsApp.MessageObserved += OnNativeWhatsAppMessage;
+        _nativeWhatsApp.StatusChanged += OnNativeWhatsAppStatusChanged;
 
         InitializeComponent();
 
@@ -118,6 +125,12 @@ public partial class MainWindow : Window
         // otherwise initialization would wait for a window that is not shown yet.
         _ = new WindowInteropHelper(this).EnsureHandle();
 
+        // Start the native helper before deciding whether WhatsApp can stay asleep.
+        // It is harmless when unpaired: the normal WhatsApp WebView remains active.
+        _nativeWhatsApp.Start();
+        var nativeWhatsAppReady = _nativeWhatsApp.IsEnabled && _nativeWhatsApp.IsPaired;
+        AppLog.Info($"native WhatsApp: available={_nativeWhatsApp.IsAvailable} paired={_nativeWhatsApp.IsPaired} state={_nativeWhatsApp.Status.State}");
+
         var userServicesJson = LoadUserServicesJson();
         var services = ServiceCatalog.Resolve(_settings.EnabledServices, userServicesJson, out var problems);
         foreach (var problem in problems) AppLog.Warn(problem);
@@ -139,12 +152,12 @@ public partial class MainWindow : Window
         // A hibernated service must stay asleep on startup too — otherwise "hibernate all"
         // would silently wake the last active service and defeat the memory saving.
         var active = services.First(s => s.Id == activeId);
-        var activeDormant = _settings.HibernatedServices.Contains(activeId, StringComparer.OrdinalIgnoreCase);
-        AppLog.Info($"hibernation at startup: {_settings.HibernatedServices.Count} asleep (active={activeId}, dormant={activeDormant})");
+        var activeDormant = ShouldStartDormant(active, nativeWhatsAppReady);
+        AppLog.Info($"hibernation at startup: {_settings.HibernatedServices.Count} asleep (active={activeId}, dormant={activeDormant}, nativeWhatsApp={nativeWhatsAppReady})");
         AddService(active, dormant: activeDormant);
         foreach (var def in services.Where(s => s.Id != activeId))
         {
-            var dormant = _settings.HibernatedServices.Contains(def.Id, StringComparer.OrdinalIgnoreCase);
+            var dormant = ShouldStartDormant(def, nativeWhatsAppReady);
             AddService(def, dormant);
             await Task.Delay(120);
         }
@@ -167,6 +180,15 @@ public partial class MainWindow : Window
             AppLog.Exception(ex, "loading services.json");
             return null;
         }
+    }
+
+    private bool ShouldStartDormant(ServiceDefinition def, bool nativeWhatsAppReady)
+    {
+        // A paired native bridge owns WhatsApp while its WebView is asleep. A stale
+        // persisted hibernation flag must not hide WhatsApp when the bridge is unpaired.
+        if (string.Equals(def.Id, "whatsapp", StringComparison.OrdinalIgnoreCase))
+            return nativeWhatsAppReady;
+        return _settings.HibernatedServices.Contains(def.Id, StringComparer.OrdinalIgnoreCase);
     }
 
     private void AddService(ServiceDefinition def, bool dormant)
@@ -617,6 +639,127 @@ public partial class MainWindow : Window
         });
     }
 
+    // ── Native WhatsApp ──────────────────────────────────────────────
+
+    private void OnNativeWhatsAppMessage(NativeWhatsAppMessage message)
+    {
+        Dispatcher.BeginInvoke(() =>
+        {
+            try
+            {
+                var item = _items.FirstOrDefault(i =>
+                    string.Equals(i.Id, "whatsapp", StringComparison.OrdinalIgnoreCase));
+                if (item == null) return;
+
+                // While the WebView is alive it owns WhatsApp observation. The native
+                // helper remains connected so the switch back to hibernation is instant.
+                if (item.Slot.IsLive) return;
+
+                var at = message.At == default ? DateTimeOffset.Now : message.At;
+                _activity.Add("whatsapp", "WhatsApp", "whatsapp", message.Title, message.Body, at);
+                AppLog.Info($"native WhatsApp message stored [{message.Title}]");
+                // The WebView is asleep, so "on screen" here is only the overlay.
+                // Mark read only when this conversation is actually selected in the inbox.
+                if (IsActivityChat("whatsapp", message.Title))
+                    _activity.MarkRead("whatsapp", message.Title);
+
+                UpdateNativeWhatsAppBadge();
+                if (IsActivityChat("whatsapp", message.Title)) return;
+                if (ResolveNotificationMode("whatsapp") == NotificationMode.Off) return;
+                if (!_nativeWhatsAppGate.ShouldNotify(
+                        NotificationGate.KeyFor(message.Title, message.Body), DateTimeOffset.UtcNow))
+                    return;
+
+                _toasts.Show("whatsapp", message.Title, message.Body, _settings.NotificationSound);
+            }
+            catch (Exception ex)
+            {
+                AppLog.Exception(ex, "native WhatsApp activity");
+            }
+        });
+    }
+
+    private void OnNativeWhatsAppStatusChanged()
+    {
+        Dispatcher.BeginInvoke(() =>
+        {
+            try
+            {
+                var item = _items.FirstOrDefault(i =>
+                    string.Equals(i.Id, "whatsapp", StringComparison.OrdinalIgnoreCase));
+                var status = _nativeWhatsApp.Status;
+                AppLog.Info($"native WhatsApp status: {status.State} paired={status.Paired}");
+
+                if (item != null && status is { State: "connected", Paired: true } &&
+                    item.Slot.IsLive && !IsServiceOnScreen("whatsapp") && !_showingActivity)
+                {
+                    // Pairing just completed (or reconnected) while WhatsApp was not on
+                    // screen. Put the heavy WebView back to sleep immediately.
+                    item.Slot.Hibernate();
+                    item.IsDormant = true;
+                    AppLog.Info("WhatsApp WebView hibernated after native pairing");
+                }
+
+                var nativeUnavailable = status.State == "logged_out" ||
+                    (status.Paired && status.State is "error" or "stopped");
+                if (item is { IsDormant: true } && nativeUnavailable)
+                {
+                    // The native helper is no longer able to own WhatsApp. Never leave
+                    // the user with a dormant WebView and no message source.
+                    item.IsDormant = false;
+                    _ = item.Slot.CreateAsync();
+                    _settings.HibernatedServices.RemoveAll(id =>
+                        string.Equals(id, "whatsapp", StringComparison.OrdinalIgnoreCase));
+                    _store.Save(_settings);
+                    AppLog.Warn($"native WhatsApp unavailable ({status.State}); waking WebView");
+                }
+
+                UpdateNativeWhatsAppBadge();
+                UpdateActivitySleepBanner();
+                UpdateOverlay();
+            }
+            catch (Exception ex)
+            {
+                AppLog.Exception(ex, "native WhatsApp status change");
+            }
+        });
+    }
+
+    private void UpdateNativeWhatsAppBadge()
+    {
+        var item = _items.FirstOrDefault(i =>
+            string.Equals(i.Id, "whatsapp", StringComparison.OrdinalIgnoreCase));
+        if (item == null || item.Slot.IsLive) return;
+        if (!_nativeWhatsApp.IsEnabled || !_nativeWhatsApp.IsPaired) return;
+        _badges.SetExact("whatsapp", _activity.UnreadFor("whatsapp"));
+    }
+
+    /// <summary>Settings: switch native WhatsApp collection on/off without a restart.</summary>
+    public void SetNativeWhatsAppEnabled(bool enabled)
+    {
+        _settings.NativeWhatsAppEnabled = enabled;
+        if (!enabled)
+        {
+            _nativeWhatsApp.Stop();
+            var item = _items.FirstOrDefault(i =>
+                string.Equals(i.Id, "whatsapp", StringComparison.OrdinalIgnoreCase));
+            if (item is { IsDormant: true })
+            {
+                item.IsDormant = false;
+                _ = item.Slot.CreateAsync();
+            }
+        }
+        else
+        {
+            _nativeWhatsApp.Start();
+        }
+
+        _store.Save(_settings);
+        UpdateNativeWhatsAppBadge();
+        UpdateActivitySleepBanner();
+        UpdateOverlay();
+    }
+
     // ── Unified inbox ────────────────────────────────────────────────
 
     private const int ActivityDisplayLimit = 150;
@@ -717,19 +860,34 @@ public partial class MainWindow : Window
         AllBadge.Visibility = unread > 0 ? Visibility.Visible : Visibility.Collapsed;
         AllBadgeText.Text = unread > 99 ? "99+" : unread.ToString();
 
+        UpdateNativeWhatsAppBadge();
         UpdateActivitySleepBanner();
     }
 
     private void UpdateActivitySleepBanner()
     {
-        var dormant = _items.Where(i => i.IsDormant).Select(i => i.Def.DisplayName).ToList();
-        if (dormant.Count == 0 || _items.Count == 0)
+        var nativeWhatsApp = _nativeWhatsApp.IsEnabled && _nativeWhatsApp.IsPaired;
+        var dormant = _items
+            .Where(i => i.IsDormant && !(nativeWhatsApp &&
+                string.Equals(i.Id, "whatsapp", StringComparison.OrdinalIgnoreCase)))
+            .Select(i => i.Def.DisplayName)
+            .ToList();
+
+        if (dormant.Count == 0 && !(nativeWhatsApp && _items.Any(i =>
+                string.Equals(i.Id, "whatsapp", StringComparison.OrdinalIgnoreCase) && i.IsDormant)))
         {
             ActivitySleepBanner.Visibility = Visibility.Collapsed;
             return;
         }
 
         ActivitySleepBanner.Visibility = Visibility.Visible;
+        if (dormant.Count == 0)
+        {
+            ActivitySleepText.Text =
+                "WhatsApp is collected natively while its WebView sleeps; open WhatsApp here to read and reply.";
+            return;
+        }
+
         ActivitySleepText.Text = dormant.Count == 1
             ? $"{dormant[0]} is hibernated — its messages are not collected."
             : $"{dormant.Count} services are hibernated ({string.Join(", ", dormant.Take(3))}" +
@@ -944,9 +1102,15 @@ public partial class MainWindow : Window
         else if (slot.State is ServiceState.Hibernated or ServiceState.NotCreated)
         {
             SetOverlayIcon(item);
-            OverlayTitle.Text = $"{item.Def.DisplayName} is hibernated";
-            OverlayMessage.Text = "The session is kept on disk. Resume or click the service to wake it up.";
-            OverlayPrimary.Content = "Resume";
+            var nativeWhatsApp = string.Equals(item.Id, "whatsapp", StringComparison.OrdinalIgnoreCase) &&
+                                 _nativeWhatsApp.IsEnabled && _nativeWhatsApp.IsPaired;
+            OverlayTitle.Text = nativeWhatsApp
+                ? "WhatsApp is running natively"
+                : $"{item.Def.DisplayName} is hibernated";
+            OverlayMessage.Text = nativeWhatsApp
+                ? "New messages appear in All messages. Open WhatsApp here to read and reply."
+                : "The session is kept on disk. Resume or click the service to wake it up.";
+            OverlayPrimary.Content = nativeWhatsApp ? "Open WhatsApp" : "Resume";
             OverlayPrimary.Visibility = Visibility.Visible;
             OverlaySecondary.Visibility = Visibility.Collapsed;
             StateOverlay.Visibility = Visibility.Visible;
@@ -1256,6 +1420,7 @@ public partial class MainWindow : Window
     {
         _exitRequested = true;
         PersistSettings();
+        try { _nativeWhatsApp.Dispose(); } catch { /* best effort */ }
         try
         {
             foreach (var slot in _slots) slot.Dispose();
@@ -1276,7 +1441,13 @@ public partial class MainWindow : Window
                 _settings.WindowWidth = bounds.Width;
                 _settings.WindowHeight = bounds.Height;
             }
-            _settings.HibernatedServices = _items.Where(i => i.IsDormant).Select(i => i.Id).ToList();
+            // Native-mode WhatsApp is intentionally asleep, not manually hibernated.
+            var nativeWhatsApp = _nativeWhatsApp.IsEnabled && _nativeWhatsApp.IsPaired;
+            _settings.HibernatedServices = _items
+                .Where(i => i.IsDormant && !(nativeWhatsApp &&
+                    string.Equals(i.Id, "whatsapp", StringComparison.OrdinalIgnoreCase)))
+                .Select(i => i.Id)
+                .ToList();
             _store.Save(_settings);
         }
         catch (Exception ex)

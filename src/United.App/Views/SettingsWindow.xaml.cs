@@ -3,6 +3,7 @@ using System.IO;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 using Microsoft.Web.WebView2.Core;
@@ -47,6 +48,9 @@ public partial class SettingsWindow : Window
 
         InitializeComponent();
 
+        foreach (var nav in new[] { NavGeneral, NavServices, NavPerformance, NavAbout })
+            nav.PreviewMouseLeftButtonDown += Nav_PreviewMouseLeftButtonDown;
+
         LoadGeneral();
         BuildServiceRows();
         LoadAbout();
@@ -61,6 +65,17 @@ public partial class SettingsWindow : Window
     }
 
     // ── Navigation ─────────────────────────────────────────────────
+
+    // Select on mouse-down. On a cold start the window may still be activating,
+    // and the button-up can be lost, which made the first tab click do nothing.
+    private void Nav_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is RadioButton nav)
+        {
+            nav.IsChecked = true;
+            e.Handled = true;
+        }
+    }
 
     private void Nav_Checked(object sender, RoutedEventArgs e)
     {

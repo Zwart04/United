@@ -2,9 +2,9 @@
 
 Satu aplikasi Windows yang ringan untuk **WhatsApp, Facebook, Instagram, Telegram, Discord, Threads** — plus layanan lain yang Anda tambahkan sendiri (X, Messenger, Reddit, LinkedIn, Bluesky, YouTube, atau situs apa pun).
 
-United adalah shell desktop berbasis **.NET 10 + WebView2** yang membuka situs resmi setiap layanan di profil terisolasi. Sesi login tersimpan, notifikasi memakai toast Windows asli, sidebar dibuat minimal, dan ada mode hemat memori. Tidak ada backend cloud dan tidak ada data yang dikirim ke pihak ketiga selain situs layanan itu sendiri. Sejak 0.2.0, WhatsApp punya **mode native opsional** (hybrid): helper `whatsmeow` mengumpulkan preview saat WebView WhatsApp tidur, lalu WebView bangun hanya ketika Anda membuka chat untuk membaca/membalas.
+United adalah shell desktop berbasis **.NET 10 + WebView2** yang membuka situs resmi setiap layanan di profil terisolasi. Sesi login tersimpan, notifikasi memakai toast Windows asli, sidebar dibuat minimal, dan ada mode hemat memori. Tidak ada backend cloud dan tidak ada data yang dikirim ke pihak ketiga selain situs layanan itu sendiri. Sejak 0.2.1, WhatsApp punya **mode native opsional** (hybrid): helper `whatsmeow` mengumpulkan preview saat WebView WhatsApp tidur, lalu WebView bangun hanya ketika Anda membuka chat untuk membaca/membalas.
 
-> Status: **0.2.0** · Windows 10 2004+ / Windows 11 · x64
+> Status: **0.2.1** · Windows 10 2004+ / Windows 11 · x64
 > UI aplikasi berbahasa Inggris; dokumentasi ini berbahasa Indonesia.
 >
 > **Unduh build portable:** [Releases](https://github.com/Zwart04/United/releases/latest) · butuh .NET 10 Desktop Runtime dan WebView2 Runtime.
@@ -15,7 +15,7 @@ United adalah shell desktop berbasis **.NET 10 + WebView2** yang membuka situs r
 
 - **6 layanan bawaan**: WhatsApp, Facebook, Instagram, Telegram, Discord, Threads.
 - **6 layanan opsional sekali klik**: X, Messenger, Reddit, LinkedIn, Bluesky, YouTube.
-- **WhatsApp hybrid (0.2.0)**: setelah scan QR sekali di Settings, WhatsApp WebView tetap tidur dan pesan masuk tetap tampil di All messages. Klik chat untuk membangunkan WebView resmi dan membalas. Ini menghemat sekitar **900 MB private / 985 MB working set** pada mesin uji (lihat [docs/VERIFICATION.md](docs/VERIFICATION.md)).
+- **WhatsApp hybrid (0.2.1)**: setelah scan QR sekali di Settings, WhatsApp WebView tetap tidur dan pesan masuk tetap tampil di All messages. Klik chat untuk membangunkan WebView resmi dan membalas. Ini menghemat sekitar **900 MB private / 985 MB working set** pada mesin uji (lihat [docs/VERIFICATION.md](docs/VERIFICATION.md)).
 - **Tambah situs apa pun** lewat dialog (nama, URL, logo, mode notifikasi) atau `services.json`.
 - **Logo bisa diganti sendiri** per layanan — PNG/JPG/ICO/BMP/GIF, dinormalisasi ke PNG maksimal 256 px. Lihat [docs/LOGOS.md](docs/LOGOS.md).
 - **Sesi terisolasi** per layanan; login sekali, tetap tersimpan setelah restart.
@@ -26,7 +26,7 @@ United adalah shell desktop berbasis **.NET 10 + WebView2** yang membuka situs r
 - **Login OAuth di dalam aplikasi**: host login umum (Google, Apple, Microsoft, Steam, YouTube) dibuka sebagai popup United dengan profil sesi yang sama, jadi Anda tidak keluar ke browser.
 - **Hemat memori**: satu proses Chromium bersama, mode low-memory untuk layanan latar, dan hibernate total untuk melepas RAM.
 - **Tray + autostart**, close-to-tray, tema terang/gelap/mengikuti sistem (halaman web ikut tema United), deep link `united://` untuk klik toast.
-- **Tanpa installer wajib**: jalankan folder portable; data disimpan di `%LOCALAPPDATA%\United`.
+- **Installer tersedia (portable atau Inno Setup)**: jalankan folder portable; data disimpan di `%LOCALAPPDATA%\United`.
 
 ## Mulai cepat
 
@@ -185,6 +185,6 @@ Kode aplikasi: MIT (lihat [LICENSE](LICENSE)). Paket pihak ketiga: .NET 10, WPF,
 - Enam layanan bawaan sudah dipakai dengan akun nyata. Notifikasi nyata end-to-end baru terbukti untuk Telegram dan WhatsApp; empat layanan lain diverifikasi lewat observer DOM dengan perubahan DOM terkontrol, belum dengan pesan masuk dari akun lain.
 - End-to-end toast click routing belum diuji dengan notifikasi nyata.
 - SVG/WebP tidak didukung untuk logo kustom; GIF animasi tidak dipertahankan.
-- Belum ada installer/uninstaller resmi; gunakan folder portable + hapus data manual.
+- Installer resmi tersedia (`United-Setup-0.2.1.exe`); data pengguna tetap di `%LOCALAPPDATA%\United` dan tidak dihapus saat uninstall.
 
 Daftar lengkap: [docs/KNOWN-LIMITATIONS.md](docs/KNOWN-LIMITATIONS.md).

@@ -1,13 +1,13 @@
 # Batasan yang Diketahui
 
-Dokumen ini jujur tentang apa yang **belum** berfungsi, belum diuji, atau memang di luar cakupan United 0.2.0. Tanggal: **22 Oktober 2026**.
+Dokumen ini jujur tentang apa yang **belum** berfungsi, belum diuji, atau memang di luar cakupan United 0.2.1. Tanggal: **22 Oktober 2026**.
 
 ## Ringkasan status
 
 | Area | Status |
 |---|---|
 | Build & unit test | ✅ 0 warning/error; 55/55 test |
-| Native WhatsApp (0.2.0) | belum diverifikasi end-to-end: helper dan QR sudah nyata, pairing akun + ukur RAM setelah pairing belum |
+| Native WhatsApp (0.2.1) | belum diverifikasi end-to-end: helper dan QR sudah nyata, pairing akun + ukur RAM setelah pairing belum |
 | 6 layanan default + Facebook | ✅ tampil, halaman login WhatsApp/Facebook terverifikasi |
 | Migrasi settings lama → Facebook | ✅ unit test |
 | Tambah/hapus layanan kustom | ✅ diuji end-to-end (service uji “Test Chat”, sudah dibersihkan) |
@@ -78,7 +78,7 @@ Dokumen ini jujur tentang apa yang **belum** berfungsi, belum diuji, atau memang
 - Tidak ada backup/sinkronisasi otomatis. Salin folder saat aplikasi tertutup.
 - Profil WebView2 dapat terikat pada versi/mesin; memindahkan sesi antar-PC bersifat best-effort.
 - Log dapat memuat judul halaman/error; periksa sebelum membagikannya.
-- Shortcut Start Menu dan entri registry per user dibuat otomatis. Belum ada uninstaller resmi.
+- Shortcut Start Menu dan entri registry per user dibuat otomatis. Uninstaller Inno Setup tersedia dan menghapus shortcut/registry; data `%LOCALAPPDATA%\United` tidak dihapus otomatis.
 - Single instance mencegah dua proses memakai UDF yang sama; jika proses menggantung, hentikan lewat Task Manager.
 
 ## 6. Keterbatasan memori & performa
@@ -111,7 +111,7 @@ Dokumen ini jujur tentang apa yang **belum** berfungsi, belum diuji, atau memang
 
 ## 8. Keterbatasan distribusi
 
-- Belum ada installer Inno Setup, uninstaller, atau auto-update.
+- Installer Inno Setup (`United-Setup-0.2.1.exe`) dan uninstaller tersedia; auto-update belum ada.
 - Build framework-dependent membutuhkan **.NET 10 Desktop Runtime**; self-contained jauh lebih besar.
 - WebView2 Runtime harus tersedia (biasanya sudah).
 - Data **tidak portable** bersama folder aplikasi; tetap di `%LOCALAPPDATA%`.

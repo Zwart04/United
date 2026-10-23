@@ -1,6 +1,6 @@
 # Verifikasi Fitur
 
-Tanggal verifikasi: **22 Oktober 2026** · Windows 10 (build 10.0.19045), layar 1920×1080 @125%, United 0.2.0 Release build.
+Tanggal verifikasi: **22 Oktober 2026** · Windows 10 (build 10.0.19045), layar 1920×1080 @125%, United 0.2.1 Release build.
 
 Dokumen ini membedakan **sudah diuji** dari **belum diuji**. Jangan mengklaim fitur yang belum masuk kolom “Lulus”.
 
@@ -35,6 +35,7 @@ Skrip: `tools/verify-ui.ps1` + UI Automation (PowerShell), screenshot via `Print
 | WhatsApp official logo | sidebar + halaman QR | ✅ |
 | Ganti service | Instagram → WhatsApp, state tetap | ✅ |
 | Settings terbuka dari gear | screenshot `settings-general.png` (tidak disimpan di repo) | ✅ |
+| Navigasi Settings dapat diklik mouse (fix 0.2.1) | `PreviewMouseLeftButtonDown` memindahkan fokus ke panel konten sebelum WebView2 menangkap klik; UIA `SelectionItemPattern` berubah untuk General/Services/Performance/About; klik mouse manual lulus | ✅ (22 Okt 2026) |
 | Halaman Services: 6 baris, logo brand, URL, state + id, Enabled, mode | `images/services-top.png` | ✅ |
 | Daftar “Add a service”: X, Messenger, Reddit, LinkedIn, Bluesky, YouTube + logo resmi | `images/services-bottom.png` | ✅ |
 | Tambah layanan bawaan (X) | `settings.json` → `x`; sidebar 7; state ready | ✅ |
@@ -109,7 +110,7 @@ Skrip: `tools/verify-ui.ps1` + UI Automation (PowerShell), screenshot via `Print
 | Panggilan audio/video, kamera/mikrofon | Butuh akun & lawan bicara |
 | Autostart setelah reboot | Butuh reboot |
 | Multi-monitor/DPI campuran | Mesin uji satu monitor |
-| Installer/uninstaller | Belum ada installer |
+| Installer/uninstaller | ✅ diuji 22 Okt 2026: `United-Setup-0.2.1.exe` (Inno Setup) install silent ke folder uji, versi 0.2.1, shortcut + registry dibuat, uninstall menghapus shortcut/registry; sisa file terkunci dibersihkan manual |
 | Soak test (RAM/CPU berjam-jam) | Belum dijalankan |
 
 ## 4. Checklist uji manual dengan akun nyata
@@ -168,9 +169,9 @@ Gunakan akun uji, bukan akun produksi. Centang setelah lulus.
 - [ ] Tidak ada layanan ganda setelah launch kedua (single instance)
 - [ ] Log tidak berisi error berulang
 
-## 3a. Native WhatsApp (0.2.0)
+## 3a. Native WhatsApp (0.2.1)
 
-Diuji pada build Release 0.2.0, Windows 10 19045, 22 Oktober 2026.
+Diuji pada build Release 0.2.1, Windows 10 19045, 22 Oktober 2026.
 
 | Skenario | Bukti | Status |
 |---|---|---|

@@ -4,7 +4,7 @@
 ; Then compile this file with ISCC.exe. See tools\build-installer.ps1.
 
 #define MyAppName "United Messenger"
-#define MyAppVersion "0.2.1"
+#define MyAppVersion "0.2.2"
 #define MyAppPublisher "United"
 #define MyAppExeName "United.exe"
 #define MyAppId "{{7E5B2C5A-3F1D-4B8E-9C2A-4D6F8A1B3C70}"
@@ -105,12 +105,34 @@ begin
     HasDesktopRuntimeIn(ExpandConstant('{pf32}\dotnet\shared\Microsoft.WindowsDesktop.App'));
 end;
 
+function HasWebView2In(Root: String): Boolean;
+var
+  FindRec: TFindRec;
+begin
+  Result := FileExists(Root + '\msedgewebview2.exe');
+  if Result then
+    Exit;
+
+  // The Evergreen runtime normally lives in a versioned subfolder such as
+  // Application\155.0.4283.60\msedgewebview2.exe.
+  if FindFirst(Root + '\*', FindRec) then
+  try
+    repeat
+      if (FindRec.Attributes and FILE_ATTRIBUTE_DIRECTORY) <> 0 then
+        if FileExists(Root + '\' + FindRec.Name + '\msedgewebview2.exe') then
+          Result := True;
+    until Result or not FindNext(FindRec);
+  finally
+    FindClose(FindRec);
+  end;
+end;
+
 function HasWebView2: Boolean;
 begin
   Result :=
-    FileExists(ExpandConstant('{pf64}\Microsoft\EdgeWebView\Application\msedgewebview2.exe')) or
-    FileExists(ExpandConstant('{pf32}\Microsoft\EdgeWebView\Application\msedgewebview2.exe')) or
-    FileExists(ExpandConstant('{localappdata}\Microsoft\EdgeWebView\Application\msedgewebview2.exe'));
+    HasWebView2In(ExpandConstant('{pf64}\Microsoft\EdgeWebView\Application')) or
+    HasWebView2In(ExpandConstant('{pf32}\Microsoft\EdgeWebView\Application')) or
+    HasWebView2In(ExpandConstant('{localappdata}\Microsoft\EdgeWebView\Application'));
 end;
 
 function InitializeSetup: Boolean;
@@ -121,6 +143,12 @@ begin
 
   if not HasDotNet10Desktop then
   begin
+    if WizardSilent then
+    begin
+      Result := False;
+      Exit;
+    end;
+
     Answer := MsgBox(
       'United Messenger needs the .NET 10 Desktop Runtime (x64).' + #13#10#13#10 +
       'Open the official download page now? Install it, then run this setup again.',
@@ -133,6 +161,12 @@ begin
 
   if not HasWebView2 then
   begin
+    // Silent updates are started by an already-running United, so the runtime
+    // is present even if detection missed a relocated/new layout. Never block
+    // an unattended upgrade behind this warning.
+    if WizardSilent then
+      Exit;
+
     Answer := MsgBox(
       'Microsoft Edge WebView2 Runtime was not detected.' + #13#10#13#10 +
       'United uses the official WebView2 surface for the web services. ' +

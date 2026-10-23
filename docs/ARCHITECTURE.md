@@ -162,10 +162,10 @@ Catatan: file yang diedit manual akan ditulis ulang (komentar hilang) saat ada o
 | Toast Host default | Routing & dedupe konsisten | Perlu AUMID/shortcut valid; toast click belum teruji end-to-end |
 | Ikon vektor XAML | Kecil, tajam, tanpa aset raster | Menambah brand butuh generator + rebuild; pengguna memakai PNG override |
 | Native WhatsApp opsional | WebView WhatsApp menyumbang ~900 MB private; helper Go/whatsmeow hanya ~56 MB | Library tidak resmi, butuh pairing QR, berisiko pembatasan akun; fallback ke WebView |
+| Update via GitHub Releases + SHA-256 | Tidak perlu server update sendiri; aset sudah di GitHub | Butuh aset installer + `.sha256` di setiap rilis; installer belum ditandatangani Authenticode |
 
 ## 12. Yang belum ada
 
-- Installer/uninstaller (Inno Setup) dan auto-update.
 - UI untuk user-agent, proxy, zoom, atau pengaturan per layanan selain JSON.
 - Sinkronisasi cloud/backup otomatis.
 - Dukungan multi-akun per layanan di UI.

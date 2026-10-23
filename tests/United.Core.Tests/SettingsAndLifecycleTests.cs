@@ -17,6 +17,7 @@ public class SettingsStoreTests
         var s = store.Load();
         Assert.Equal("system", s.Theme);
         Assert.True(s.CloseMinimizesToTray);
+        Assert.True(s.CheckForUpdatesOnStartup);
         Assert.Contains("whatsapp", s.EnabledServices);
     }
 
@@ -29,12 +30,16 @@ public class SettingsStoreTests
         s.Theme = "dark";
         s.LaunchAtStartup = true;
         s.EnabledServices = new List<string> { "telegram", "threads" };
+        s.CheckForUpdatesOnStartup = false;
+        s.LastUpdateCheckUtc = new DateTimeOffset(2026, 10, 23, 2, 44, 0, TimeSpan.Zero);
         store.Save(s);
 
         var loaded = new SettingsStore(path).Load();
         Assert.Equal("dark", loaded.Theme);
         Assert.True(loaded.LaunchAtStartup);
         Assert.Equal(new[] { "telegram", "threads" }, loaded.EnabledServices);
+        Assert.False(loaded.CheckForUpdatesOnStartup);
+        Assert.Equal(s.LastUpdateCheckUtc, loaded.LastUpdateCheckUtc);
     }
 
     [Fact]

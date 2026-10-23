@@ -49,6 +49,12 @@ public sealed class AppSettings
     /// </summary>
     public bool NativeWhatsAppEnabled { get; set; } = true;
 
+    /// <summary>Check GitHub Releases for a newer installer after startup.</summary>
+    public bool CheckForUpdatesOnStartup { get; set; } = true;
+
+    /// <summary>Last successful automatic update check (UTC), used for daily throttling.</summary>
+    public DateTimeOffset? LastUpdateCheckUtc { get; set; }
+
     /// <summary>Window geometry (persisted for a native feel across restarts).</summary>
     public double WindowLeft { get; set; } = double.NaN;
     public double WindowTop { get; set; } = double.NaN;

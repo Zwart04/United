@@ -1,6 +1,6 @@
 # Verifikasi Fitur
 
-Tanggal verifikasi: **22 Oktober 2026** · Windows 10 (build 10.0.19045), layar 1920×1080 @125%, United 0.2.1 Release build.
+Tanggal verifikasi: **23 Oktober 2026** · Windows 10 (build 10.0.19045), layar 1920×1080 @125%, United 0.2.2 Release build.
 
 Dokumen ini membedakan **sudah diuji** dari **belum diuji**. Jangan mengklaim fitur yang belum masuk kolom “Lulus”.
 
@@ -9,7 +9,7 @@ Dokumen ini membedakan **sudah diuji** dari **belum diuji**. Jangan mengklaim fi
 | Uji | Perintah | Hasil |
 |---|---|---|
 | Build | `dotnet build src\United.App\United.App.csproj -c Release -r win-x64 --self-contained false -t:Rebuild` | ✅ 0 warning, 0 error |
-| Unit test | `dotnet test tests\United.Core.Tests\United.Core.Tests.csproj` | ✅ 55/55 lulus |
+| Unit test | `dotnet test tests\United.Core.Tests\United.Core.Tests.csproj` | ✅ 68/68 lulus |
 | Normalisasi timestamp notifikasi | `NotificationTimeTests` (default, UTC, local, unspecified UTC, unspecified local) | ✅ timestamp UTC WebView2 tidak lagi mundur 7 jam |
 | Migrasi Facebook | `SettingsAndLifecycleTests.Load_FromVersionlessFile_AddsFacebookOnce` | ✅ facebook disisipkan setelah instagram, idempoten |
 | Facebook sudah ada | `Load_WithFacebookAlreadyPresent_DoesNotDuplicate` | ✅ tidak duplikat |
@@ -56,6 +56,14 @@ Skrip: `tools/verify-ui.ps1` + UI Automation (PowerShell), screenshot via `Print
 | Services page scrollbar bertema | thumb tipis, tanpa track putih/arrow putih | ✅ |
 | Teks `MutedText` wrapping | hint Services tidak terpotong | ✅ |
 | Settings Performance & About | screenshot; path & metrik tampil | ✅ |
+| About 0.2.2: kartu Updates + Support | UIA menemukan `United Messenger 0.2.2`, status `United 0.2.2 is up to date.`, tombol Check for updates, checkbox auto-update, dan tombol Support United/Open GitHub | ✅ (23 Okt 2026) |
+| Auto-update check ke GitHub Releases | `UpdateService` memeriksa `api.github.com/repos/Zwart04/United/releases/latest`; build 0.2.0 simulasi menemukan 0.2.1, mengunduh `United-Setup-0.2.1.exe` (10.256.640 byte), dan lolos SHA-256 | ✅ (23 Okt 2026) |
+| UI update tersedia | build 0.2.0 simulasi: About menampilkan `United 0.2.1 is available. You have 0.2.0.`; tombol `Download & install` muncul dan aktif | ✅ (23 Okt 2026) |
+| Auto-update handoff + restart | helper PowerShell menunggu proses United keluar, menjalankan installer silent (exit 0), lalu membuka ulang app; log `update.log` mencatat `installer exit 0`, marker restart terhapus | ✅ (23 Okt 2026) |
+| Installer 0.2.2 silent | exit 0 dalam ±3 detik; versi 0.2.2, bridge ikut, `unins000.exe` + shortcut + registry dibuat | ✅ (23 Okt 2026) |
+| Deteksi WebView2 installer | runtime Evergreen di subfolder versi (`...\EdgeWebView\Application\155.0.4283.60\`) sekarang terdeteksi; tidak ada message box saat silent install | ✅ (23 Okt 2026, diperbaiki) |
+| `united://open/settings` | instance kedua meneruskan payload; Settings terbuka; dipakai klik toast update | ✅ (23 Okt 2026) |
+| Tombol Support United | kartu Support tampil di About dan menu tray; URL `https://tako.id/Zwart04/gift` ada di source | ✅ UI; klik ke browser belum diotomasi |
 | Jendela muat di area kerja | 1475×950 fisik di 1920×1080; clamp WorkArea | ✅ |
 | Context menu otomatis verify-ui | sempat gagal karena foreground/instance; berhasil manual | ⚠️ skrip perlu perbaikan robustness |
 | **All messages** (`Ctrl+0`): daftar aktivitas semua layanan | daftar terisi, badge unread, klik baris membuka layanan | ✅ |
@@ -67,7 +75,7 @@ Skrip: `tools/verify-ui.ps1` + UI Automation (PowerShell), screenshot via `Print
 | OAuth popup in-app (Google) | `window.open(accounts.google.com)` → popup United “Gmail”, profil sama, di depan | ✅ (login penuh belum) |
 | Tema United → WebView2 | light & dark: `prefersDark` sesuai, body WhatsApp ikut terang/gelap | ✅ |
 | Startup dengan 6 layanan hibernated | runtime-target Release log `hibernation at startup: 6 asleep`; tidak ada `creating service webview`; proses WebView2 United = 0 setelah 65 s | ✅ (20 Okt 2026) |
-| Benchmark runtime | Debug/Release 0 warning/error; 55/55 test; 3 skenario dicatat dengan raw process data | ✅ terbatas; [laporan](benchmarks/2026-10-20-runtime-report.md) |
+| Benchmark runtime | Debug/Release 0 warning/error; 68/68 test; 3 skenario dicatat dengan raw process data | ✅ terbatas; [laporan](benchmarks/2026-10-20-runtime-report.md) |
 | Observer inbox Telegram (21 Okt) | log `live rows [telegram] 12`, `unread count [telegram] 12`, `live activity observed/stored [telegram]` | ✅ |
 | Observer inbox Discord (21 Okt) | 13 anchor DM di DOM saat DM terbuka (sidebar diparkir 340×720, `opacity:0`); `live rows [discord] 6` (baris ber-preview), `unread count [discord] 0` | ✅ |
 | Badge Discord = ikon Direct Messages (21 Okt) | uji DOM terkontrol: badge home `3` → log `unread count [discord] 3`; dihapus → `0`; pill baris `1` → `1`; ikon Server Tag tidak dihitung | ✅ |
@@ -88,6 +96,7 @@ Skrip: `tools/verify-ui.ps1` + UI Automation (PowerShell), screenshot via `Print
 | Badge unread sidebar | screenshot: WhatsApp 98, Facebook 20 `(20+)`, Telegram 12, Discord 0 (bukan 2/29759), Threads 1 (dari judul `(1) Messages • Threads`); All messages 29 (saat uji) | ✅ |
 | Badge per baris vs judul | Telegram/Facebook dihitung per baris percakapan; Discord memakai ikon Direct Messages (judul `(29761)` = mention server, bukan DM); Instagram/Threads memakai angka dari `document.title` | ✅ |
 | Build hybrid 0.2.0 (22 Okt) | publish Release win-x64; `United.WhatsAppBridge.exe` 16.431.616 byte; ZIP `build/United-portable-win-x64.zip` 13.270.514 byte / 22 entry, SHA-256 `7E58F499745259089E1652EA004D1D37350D183CB749780AB783E838326B3E15`; ekstrak ZIP lalu start: app hidup, bridge hidup, status `pairing`, QR 420x420 RGB; 55/55 test | OK |
+| Build 0.2.2 (23 Okt) | publish Release win-x64; `United.WhatsAppBridge.exe` 16.431.616 byte; installer `United-Setup-0.2.2.exe` 10.266.190 byte SHA-256 `3DD12730BD306AFB9997F19E2BACB62342F10BC932ACBD50FE9BF5C98E0BFA74`; ZIP 13.286.637 byte / 22 entry (21 file + 1 folder) SHA-256 `D99457A27FD42639BB0EFD6359181C333253B3DE14EFA0DD890E47B1ECBDE8EC`; ekstrak ZIP lalu start: app hidup, bridge ada, `unins000.exe` tidak ada (portable); 68/68 test | OK |
 | Build final portable (21 Okt) | publish 13:03 dari source final; `United.dll` 229888 byte; ZIP `build/United-portable-win-x64.zip` 6.80 MB / 21 entry, SHA-256 `31A742C053CB150FFD2D533981D8CBA0F1852998E0443125EA94892F285F89E0`; string `--remote-debugging-port`/`9222` **tidak ada** di `United.dll`/`United.exe`; port 9222 = 0 saat app berjalan; start 13:03 dari folder publish → 6 observer terpasang, WhatsApp `live rows 19`, tidak ada error/warn | ✅ |
 | Payload observer rusak (21 Okt) | JS memakai `String.prototype.toWellFormed` sebelum `postMessage`; host menyanitasi lone surrogate sebelum `JsonDocument.Parse`; field angka memakai `TryGetInt32` sehingga null diabaikan; build 0 warning/0 error; run final 13:03 tanpa ERROR/WARN | ✅ kode siap; belum ada event malformed baru |
 | Observer WhatsApp DOM (21 Okt) | `#pane-side` + 19 baris `cell-frame-container`; observer dipasang terlambat lewat `MutationObserver` setelah daftar muncul; log `live rows [whatsapp] 19`; judul dan preview dibaca dari span ber-`title`, bukan teks baris yang diawali label unread; dua perubahan preview nyata pukul 13:05:03 dan 13:05:16 tercatat `live activity observed` + `stored` (judul disamarkan) | ✅ |
@@ -106,11 +115,13 @@ Skrip: `tools/verify-ui.ps1` + UI Automation (PowerShell), screenshot via `Print
 | Notifikasi dari layanan nyata | Telegram dan WhatsApp: pesan nyata tercatat. Discord/Facebook/Instagram/Threads: pipeline preview diverifikasi lewat perubahan DOM terkontrol, belum dengan pesan masuk nyata dari akun lain |
 | Klik toast `united://open/<id>` | Butuh toast nyata |
 | Badge Bluesky | Pola judul belum diverifikasi |
-| Tray menu: Open/Settings/Hibernate all/Quit via klik | Ikon & menu dibuat; klik belum diotomasi |
+| Tray menu: Open/Settings/Support/Hibernate all/Quit via klik | Ikon & menu dibuat; klik belum diotomasi |
+| Tombol Download & install saat ada rilis lebih baru | UI build 0.2.0 simulasi menampilkan `United 0.2.1 is available` + tombol aktif; alur klik → download → install dari tombol belum diuji end-to-end, tetapi check/download/SHA-256/handoff/restart diuji terpisah |
+| Toast “United update available” + klik | Butuh rilis lebih baru; routing `united://open/settings` sudah diuji |
+| Klik Support United / menu tray Support | URL benar; pembukaan browser belum diotomasi |
 | Panggilan audio/video, kamera/mikrofon | Butuh akun & lawan bicara |
 | Autostart setelah reboot | Butuh reboot |
 | Multi-monitor/DPI campuran | Mesin uji satu monitor |
-| Installer/uninstaller | ✅ diuji 22 Okt 2026: `United-Setup-0.2.1.exe` (Inno Setup) install silent ke folder uji, versi 0.2.1, shortcut + registry dibuat, uninstall menghapus shortcut/registry; sisa file terkunci dibersihkan manual |
 | Soak test (RAM/CPU berjam-jam) | Belum dijalankan |
 
 ## 4. Checklist uji manual dengan akun nyata

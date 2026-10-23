@@ -624,7 +624,13 @@ Memindahkan sesi login ke PC lain bersifat best-effort; WebView2 dapat mengangga
 3. Jika autostart aktif, matikan dulu lewat Settings, atau hapus value `United Messenger` di registry Run.
 4. Jalankan lagi untuk memulai dari nol (shortcut & protokol dibuat ulang).
 
-### 13.5 Uninstall manual (belum ada installer)
+### 13.5 Uninstall
+
+**Build installer:** buka **Windows Settings → Apps → United Messenger → Uninstall**, atau jalankan
+`unins000.exe` di folder instalasi. Uninstaller menghapus aplikasi, shortcut, dan entri registry;
+data di `%LOCALAPPDATA%\United` **tidak** dihapus.
+
+**Build portable:**
 
 1. Quit United.
 2. Matikan autostart di Settings.
@@ -633,7 +639,22 @@ Memindahkan sesi login ke PC lain bersifat best-effort; WebView2 dapat mengangga
 5. Hapus shortcut `%APPDATA%\Microsoft\Windows\Start Menu\Programs\United Messenger`.
 6. (Opsional) Hapus `HKCU\Software\Classes\united`.
 
-### 13.6 Mengubah urutan sidebar
+### 13.6 Update otomatis & dukungan
+
+Buka **Settings → About**.
+
+- **Check for updates** memeriksa GitHub Releases dan menampilkan versi terbaru.
+- **Check for updates automatically at startup** aktif secara default, maksimal sekali per 24 jam.
+- **Download & install** mengunduh installer resmi, memverifikasi SHA-256, menjalankan installer
+  silent, lalu membuka ulang United. Tidak ada update yang dipasang tanpa konfirmasi.
+- Build **portable** tidak bisa memasang update ke foldernya sendiri; tombol update membuka halaman
+  Releases.
+- **Support United** membuka halaman dukungan Tako. Tombol yang sama ada di menu tray dan di halaman
+  GitHub repo.
+
+Log helper update ada di `%LOCALAPPDATA%\United\updates\update.log`.
+
+### 13.7 Mengubah urutan sidebar
 
 Urutan mengikuti array `enabledServices` di `settings.json`. Quit → edit urutan → jalankan. Jangan mengubah id; hanya urutannya.
 
@@ -681,9 +702,9 @@ dotnet build src\United.slnx
 dotnet test  src\United.slnx
 ```
 
-Saat dokumen ini dibuat: **0 warning, 0 error**, **54/54 test lulus**.
+Saat dokumen ini dibuat: **0 warning, 0 error**, **68/68 test lulus**.
 
-### 15.2 Publish portable
+### 15.2 Publish portable dan installer
 
 Framework-dependent (kecil; butuh .NET 10 Desktop Runtime):
 
@@ -700,6 +721,13 @@ Self-contained (besar; tidak butuh .NET terpasang):
 ```powershell
 dotnet publish src\United.App\United.App.csproj -c Release -r win-x64 --self-contained true `
   -o build\United-selfcontained-win-x64
+```
+
+Installer (butuh Inno Setup 6):
+
+```powershell
+.\tools\build-installer.ps1
+# hasil: build\United-Setup-0.2.2.exe
 ```
 
 Data tetap berada di `%LOCALAPPDATA%\United`; memindahkan folder aplikasi **tidak** memindahkan sesi.
@@ -740,9 +768,14 @@ Skrip membuka aplikasi, berpindah layanan, membuka Settings, hibernate/resume, d
 
 ## 16. Status verifikasi & batasan
 
-**Sudah diverifikasi di mesin pengembangan (21 Okt 2026):**
+**Sudah diverifikasi di mesin pengembangan (23 Okt 2026):**
 
-- Build & 54 unit test, 0 warning/0 error.
+- Build & 68 unit test, 0 warning/0 error.
+- Installer 0.2.2: silent install/upgrade, versi, bridge, shortcut, registry, dan uninstall.
+- Auto-update: cek GitHub Releases nyata, unduh installer, verifikasi SHA-256, helper menunggu app
+  keluar, installer exit 0, dan app dibuka ulang.
+- UI update tersedia (build 0.2.0 simulasi) dan link Support di Settings → About.
+- Deteksi WebView2 installer untuk runtime di subfolder versi.
 - Facebook tampil sebagai layanan default + migrasi settings lama (unit test).
 - Halaman login Facebook dimuat di WebView.
 - Tambah layanan kustom lewat dialog (Test Chat), logo kustom, services.json, sidebar live.

@@ -1,7 +1,9 @@
+using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using System.Windows.Threading;
 using United.App.Diagnostics;
+using United.App.Services;
 using United.App.Shell;
 using United.Core.Settings;
 using United.Platform.Windows.Activation;
@@ -25,6 +27,7 @@ public partial class App : Application
     private ToastService? _toasts;
     private ProcessMetricsCollector? _metrics;
     private DispatcherTimer? _pidTimer;
+    private DispatcherTimer? _updateTimer;
 
     protected override async void OnStartup(StartupEventArgs e)
     {
@@ -90,6 +93,8 @@ public partial class App : Application
         _tray = new TrayIconService();
         _tray.OpenRequested += () => Dispatcher.BeginInvoke(ShowMainWindow);
         _tray.SettingsRequested += () => Dispatcher.BeginInvoke(() => _window?.OpenSettings());
+        _tray.SupportRequested += () => Dispatcher.BeginInvoke(() =>
+            Process.Start(new ProcessStartInfo(AppLinks.Support) { UseShellExecute = true }));
         _tray.HibernateAllRequested += () => Dispatcher.BeginInvoke(() => _window?.HibernateAll());
         _tray.QuitRequested += () => Dispatcher.BeginInvoke(RequestExit);
 
@@ -106,7 +111,7 @@ public partial class App : Application
         var protocolArg = e.Args.FirstOrDefault(a =>
             a.StartsWith(ProtocolRegistration.Scheme + "://", StringComparison.OrdinalIgnoreCase));
         if (protocolArg != null && ProtocolRegistration.ParseOpenRequest(protocolArg) is { } serviceId)
-            _window.ActivateService(serviceId);
+            ActivateServiceOrSettings(serviceId);
 
         // Settings file is the source of truth for autostart.
         if (Autostart.IsEnabled != _settings.LaunchAtStartup && Environment.ProcessPath is { } p)
@@ -116,6 +121,8 @@ public partial class App : Application
         _single.MessageReceived += msg => Dispatcher.BeginInvoke(() => HandleActivationMessage(msg));
         _single.StartServer();
 
+        ScheduleUpdateCheck();
+
         AppLog.Info($"startup complete (shortcut={shortcutOk})");
     }
 
@@ -124,12 +131,62 @@ public partial class App : Application
         if (ProtocolRegistration.ParseOpenRequest(message) is { } serviceId)
         {
             ShowMainWindow();
-            _window?.ActivateService(serviceId);
+            ActivateServiceOrSettings(serviceId);
         }
         else
         {
             ShowMainWindow();
         }
+    }
+
+    private void ActivateServiceOrSettings(string serviceId)
+    {
+        if (string.Equals(serviceId, "settings", StringComparison.OrdinalIgnoreCase))
+        {
+            _window?.OpenSettings();
+            return;
+        }
+
+        _window?.ActivateService(serviceId);
+    }
+
+    /// <summary>
+    /// Checks GitHub Releases 12 seconds after startup, at most once a day. An
+    /// available update raises a toast whose click opens Settings › About.
+    /// </summary>
+    private void ScheduleUpdateCheck()
+    {
+        if (_settings?.CheckForUpdatesOnStartup != true) return;
+        if (_settings.LastUpdateCheckUtc is { } last &&
+            DateTimeOffset.UtcNow - last < TimeSpan.FromHours(23)) return;
+
+        _updateTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(12) };
+        _updateTimer.Tick += async (_, _) =>
+        {
+            _updateTimer?.Stop();
+            try
+            {
+                var result = await UpdateService.Current.CheckAsync();
+                if (result.Error == null)
+                {
+                    _settings!.LastUpdateCheckUtc = DateTimeOffset.UtcNow;
+                    _store?.Save(_settings);
+                }
+
+                if (result.UpdateAvailable && UpdateService.Current.Latest is { } release)
+                {
+                    AppLog.Info($"startup update check: {release.Version.ToString(3)} available");
+                    _toasts?.Show("settings", "United update available",
+                        $"Version {release.Version.ToString(3)} is ready. Open Settings > About to install.",
+                        sound: false);
+                }
+            }
+            catch (Exception ex)
+            {
+                AppLog.Exception(ex, "startup update check");
+            }
+        };
+        _updateTimer.Start();
     }
 
     private void ShowMainWindow()
@@ -145,6 +202,7 @@ public partial class App : Application
     {
         AppLog.Info("exit requested");
         try { _pidTimer?.Stop(); } catch { /* best effort */ }
+        try { _updateTimer?.Stop(); } catch { /* best effort */ }
         try { _window?.PrepareExit(); } catch (Exception ex) { AppLog.Exception(ex, "window prepare exit"); }
         try { _tray?.Dispose(); } catch { /* best effort */ }
         try { _toasts?.Dispose(); } catch { /* best effort */ }

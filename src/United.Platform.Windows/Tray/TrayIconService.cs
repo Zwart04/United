@@ -7,7 +7,7 @@ namespace United.Platform.Windows.Tray;
 
 /// <summary>
 /// System tray icon with unread badge, rendered on demand (no bitmap assets).
-/// Menu: Open · Settings · Hibernate all · Quit.
+/// Menu: Open · Settings · Support · Hibernate all · Quit.
 /// </summary>
 public sealed class TrayIconService : IDisposable
 {
@@ -19,6 +19,7 @@ public sealed class TrayIconService : IDisposable
 
     public event Action? OpenRequested;
     public event Action? SettingsRequested;
+    public event Action? SupportRequested;
     public event Action? HibernateAllRequested;
     public event Action? QuitRequested;
 
@@ -29,6 +30,8 @@ public sealed class TrayIconService : IDisposable
         open.Click += (_, _) => OpenRequested?.Invoke();
         var settings = new ToolStripMenuItem("Settings…");
         settings.Click += (_, _) => SettingsRequested?.Invoke();
+        var support = new ToolStripMenuItem("Support United…");
+        support.Click += (_, _) => SupportRequested?.Invoke();
         var hibernate = new ToolStripMenuItem("Hibernate all services");
         hibernate.Click += (_, _) => HibernateAllRequested?.Invoke();
         var quit = new ToolStripMenuItem("Quit");
@@ -37,6 +40,7 @@ public sealed class TrayIconService : IDisposable
         _menu.Items.Add(open);
         _menu.Items.Add(new ToolStripSeparator());
         _menu.Items.Add(settings);
+        _menu.Items.Add(support);
         _menu.Items.Add(hibernate);
         _menu.Items.Add(new ToolStripSeparator());
         _menu.Items.Add(quit);

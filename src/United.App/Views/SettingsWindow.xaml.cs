@@ -31,6 +31,8 @@ public partial class SettingsWindow : Window
     private readonly DispatcherTimer _perfTimer;
     private readonly Dictionary<string, TextBlock> _stateLabels = new(StringComparer.OrdinalIgnoreCase);
     private bool _loading = true;
+    private bool _updateBusy;
+    private bool _updateChecked;
 
     public SettingsWindow(AppSettings settings, SettingsStore store, ThemeManager theme,
         ProcessMetricsCollector metrics, MainWindow host, Platform.Windows.Notifications.ToastService toasts)
@@ -89,6 +91,12 @@ public partial class SettingsWindow : Window
 
         if (NavServices.IsChecked == true) BuildServiceRows();
         if (NavPerformance.IsChecked == true) RefreshPerformance();
+        if (NavAbout.IsChecked == true)
+        {
+            RefreshUpdateStatus();
+            if (_settings.CheckForUpdatesOnStartup && !_updateBusy && !_updateChecked)
+                _ = CheckForUpdatesAsync(force: false);
+        }
     }
 
     // ── General ────────────────────────────────────────────────────
@@ -681,7 +689,142 @@ public partial class SettingsWindow : Window
         AboutActivation.Text =
             $"Toast AUMID shortcut: {(StartMenuShortcut.ShortcutExists ? "created" : "missing")}\n" +
             $"Protocol {ProtocolRegistration.Scheme}:// : {(ProtocolRegistration.IsRegistered ? "registered (HKCU)" : "not registered")}";
+
+        AutoUpdateCheck.IsChecked = _settings.CheckForUpdatesOnStartup;
+        RefreshUpdateStatus();
     }
+
+    private void RefreshUpdateStatus()
+    {
+        var update = UpdateService.Current;
+        var latest = update.Latest;
+
+        if (latest != null)
+        {
+            UpdateStatusText.Text =
+                $"United {latest.Version.ToString(3)} is available. You have {update.CurrentVersionText}.";
+            InstallUpdateButton.Visibility = Visibility.Visible;
+            return;
+        }
+
+        InstallUpdateButton.Visibility = Visibility.Collapsed;
+        if (_updateChecked && update.LastError is { Length: > 0 } error)
+            UpdateStatusText.Text = $"Update check failed: {error}";
+        else if (_updateChecked)
+            UpdateStatusText.Text = $"United {update.CurrentVersionText} is up to date.";
+        else
+            UpdateStatusText.Text = update.IsInstalledBuild
+                ? $"United {update.CurrentVersionText}. Check GitHub Releases for a newer installer."
+                : $"United {update.CurrentVersionText} (portable). Download new ZIPs from GitHub Releases.";
+    }
+
+    private async void CheckUpdate_Click(object sender, RoutedEventArgs e)
+        => await CheckForUpdatesAsync(force: true);
+
+    private async Task CheckForUpdatesAsync(bool force)
+    {
+        if (_updateBusy) return;
+        _updateBusy = true;
+        CheckUpdateButton.IsEnabled = false;
+        UpdateProgress.Visibility = Visibility.Collapsed;
+        UpdateStatusText.Text = "Checking GitHub Releases…";
+
+        try
+        {
+            await UpdateService.Current.CheckAsync(force);
+            _updateChecked = true;
+        }
+        finally
+        {
+            _updateBusy = false;
+            CheckUpdateButton.IsEnabled = true;
+            RefreshUpdateStatus();
+        }
+    }
+
+    private async void InstallUpdate_Click(object sender, RoutedEventArgs e)
+    {
+        var update = UpdateService.Current;
+        var release = update.Latest;
+        if (release is null)
+        {
+            await CheckForUpdatesAsync(force: true);
+            release = update.Latest;
+            if (release is null) return;
+        }
+        if (!update.IsInstalledBuild)
+        {
+            MessageBox.Show(this,
+                "Automatic installation is available for the installed build.\n\n" +
+                "Portable users can download the latest ZIP from the Releases page.",
+                "United update", MessageBoxButton.OK, MessageBoxImage.Information);
+            Process.Start(new ProcessStartInfo(release.ReleaseUrl) { UseShellExecute = true });
+            return;
+        }
+
+        var answer = MessageBox.Show(this,
+            $"Download and install United {release.Version.ToString(3)}?\n\n" +
+            "United will close and reopen when the installer finishes.",
+            "United update", MessageBoxButton.YesNo, MessageBoxImage.Question);
+        if (answer != MessageBoxResult.Yes) return;
+
+        _updateBusy = true;
+        CheckUpdateButton.IsEnabled = false;
+        InstallUpdateButton.IsEnabled = false;
+        UpdateProgress.Visibility = Visibility.Visible;
+        UpdateProgress.Value = 0;
+
+        try
+        {
+            var progress = new Progress<double>(value =>
+            {
+                UpdateProgress.Value = value;
+                UpdateStatusText.Text = $"Downloading United {release.Version.ToString(3)}… {value * 100:0}%";
+            });
+
+            var installer = await update.DownloadAndVerifyAsync(release, progress);
+            UpdateStatusText.Text = "Checksum verified. Installing update — United will reopen automatically…";
+
+            if (update.BeginInstall(installer))
+            {
+                if (Application.Current is App app) app.RequestExit();
+                else Application.Current.Shutdown();
+            }
+            else
+            {
+                UpdateStatusText.Text = "Could not start the installer. Opening the Releases page…";
+                Process.Start(new ProcessStartInfo(release.ReleaseUrl) { UseShellExecute = true });
+            }
+        }
+        catch (Exception ex)
+        {
+            UpdateStatusText.Text = $"Update failed: {ex.Message}";
+            MessageBox.Show(this,
+                $"The update could not be installed.\n\n{ex.Message}\n\n" +
+                "You can download the latest installer from the Releases page.",
+                "United update", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+        finally
+        {
+            _updateBusy = false;
+            CheckUpdateButton.IsEnabled = true;
+            InstallUpdateButton.IsEnabled = true;
+            UpdateProgress.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    private void UpdateSetting_Changed(object sender, RoutedEventArgs e)
+    {
+        if (_loading) return;
+        _settings.CheckForUpdatesOnStartup = AutoUpdateCheck.IsChecked == true;
+        _store.Save(_settings);
+    }
+
+    private void SupportUnited_Click(object sender, RoutedEventArgs e)
+        => Process.Start(new ProcessStartInfo(AppLinks.Support) { UseShellExecute = true });
+
+    private void OpenGitHub_Click(object sender, RoutedEventArgs e)
+        => Process.Start(new ProcessStartInfo(AppLinks.GitHub) { UseShellExecute = true });
 
     private void OpenDataFolder_Click(object sender, RoutedEventArgs e)
     {

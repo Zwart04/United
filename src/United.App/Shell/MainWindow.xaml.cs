@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -1253,6 +1254,18 @@ public partial class MainWindow : Window
     }
 
     private void Settings_Click(object sender, RoutedEventArgs e) => OpenSettings();
+
+    private void SupportUnited_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            Process.Start(new ProcessStartInfo(AppLinks.Support) { UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            AppLog.Warn("unable to open support page: " + ex.Message);
+        }
+    }
 
     public void OpenSettings()
     {

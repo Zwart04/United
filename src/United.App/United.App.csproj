@@ -11,7 +11,7 @@
     <AssemblyName>United</AssemblyName>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Assets\united.ico</ApplicationIcon>
-    <Version>0.2.2</Version>
+    <Version>0.2.3</Version>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <Product>United Messenger</Product>
     <Company>United</Company>

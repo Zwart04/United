@@ -1,6 +1,6 @@
 # Batasan yang Diketahui
 
-Dokumen ini jujur tentang apa yang **belum** berfungsi, belum diuji, atau memang di luar cakupan United 0.2.2. Tanggal: **23 Oktober 2026**.
+Dokumen ini jujur tentang apa yang **belum** berfungsi, belum diuji, atau memang di luar cakupan United 0.2.3. Tanggal: **23 Oktober 2026**.
 
 ## Ringkasan status
 
@@ -111,16 +111,16 @@ Dokumen ini jujur tentang apa yang **belum** berfungsi, belum diuji, atau memang
 
 ## 8. Keterbatasan distribusi
 
-- Installer Inno Setup (`United-Setup-0.2.2.exe`) dan uninstaller tersedia; auto-update tersedia untuk build installer.
-- Build framework-dependent membutuhkan **.NET 10 Desktop Runtime**; self-contained jauh lebih besar.
+- Installer Inno Setup (`United-Setup-0.2.3.exe`) dan uninstaller tersedia; auto-update tersedia untuk build installer. **Tidak ada build/aset portable.**
+- Build framework-dependent membutuhkan **.NET 10 Desktop Runtime**; self-contained tidak didistribusikan.
 - WebView2 Runtime harus tersedia (biasanya sudah).
-- Data **tidak portable** bersama folder aplikasi; tetap di `%LOCALAPPDATA%`.
+- Data tetap di `%LOCALAPPDATA%\United`, tidak ikut folder aplikasi.
 - Build x64 saja (`win-x64`).
 - Belum ada code signing; SmartScreen dapat memperingatkan saat exe baru diunduh/dijalankan.
 
 ### Auto-update
 
-- Hanya build installer yang bisa memasang update sendiri. Build portable harus mengunduh ZIP baru dari Releases.
+- United hanya didistribusikan sebagai installer; tidak ada ZIP portable. Auto-update hanya tersedia pada build installer.
 - Pemeriksaan memakai GitHub API tanpa token. Batasnya 60 permintaan/jam per IP; United membatasi pemeriksaan otomatis maksimal sekali per 24 jam, tetapi jaringan dengan banyak pengguna di IP yang sama bisa terkena rate limit.
 - Unduhan memakai installer penuh, bukan delta. Setiap update mengunduh ulang seluruh paket.
 - SHA-256 membuktikan integritas unduhan dari rilis yang sama, bukan identitas penerbit. Installer belum ditandatangani Authenticode.

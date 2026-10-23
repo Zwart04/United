@@ -715,7 +715,7 @@ public partial class SettingsWindow : Window
         else
             UpdateStatusText.Text = update.IsInstalledBuild
                 ? $"United {update.CurrentVersionText}. Check GitHub Releases for a newer installer."
-                : $"United {update.CurrentVersionText} (portable). Download new ZIPs from GitHub Releases.";
+                : $"United {update.CurrentVersionText}. Install with the setup EXE to enable automatic updates.";
     }
 
     private async void CheckUpdate_Click(object sender, RoutedEventArgs e)
@@ -756,7 +756,7 @@ public partial class SettingsWindow : Window
         {
             MessageBox.Show(this,
                 "Automatic installation is available for the installed build.\n\n" +
-                "Portable users can download the latest ZIP from the Releases page.",
+                "Download the latest installer from the Releases page.",
                 "United update", MessageBoxButton.OK, MessageBoxImage.Information);
             Process.Start(new ProcessStartInfo(release.ReleaseUrl) { UseShellExecute = true });
             return;

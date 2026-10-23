@@ -1,6 +1,6 @@
 # Verifikasi Fitur
 
-Tanggal verifikasi: **23 Oktober 2026** · Windows 10 (build 10.0.19045), layar 1920×1080 @125%, United 0.2.2 Release build.
+Tanggal verifikasi: **23 Oktober 2026** · Windows 10 (build 10.0.19045), layar 1920×1080 @125%, United 0.2.3 Release build.
 
 Dokumen ini membedakan **sudah diuji** dari **belum diuji**. Jangan mengklaim fitur yang belum masuk kolom “Lulus”.
 
@@ -56,14 +56,15 @@ Skrip: `tools/verify-ui.ps1` + UI Automation (PowerShell), screenshot via `Print
 | Services page scrollbar bertema | thumb tipis, tanpa track putih/arrow putih | ✅ |
 | Teks `MutedText` wrapping | hint Services tidak terpotong | ✅ |
 | Settings Performance & About | screenshot; path & metrik tampil | ✅ |
-| About 0.2.2: kartu Updates + Support | UIA menemukan `United Messenger 0.2.2`, status `United 0.2.2 is up to date.`, tombol Check for updates, checkbox auto-update, dan tombol Support United/Open GitHub | ✅ (23 Okt 2026) |
+| About 0.2.3: kartu Updates + Support | UIA menemukan `United Messenger 0.2.3`, status `United 0.2.3 is up to date.`, tombol Check for updates, checkbox auto-update, badge Support United, dan tombol Open GitHub | ✅ (23 Okt 2026) |
 | Auto-update check ke GitHub Releases | `UpdateService` memeriksa `api.github.com/repos/Zwart04/United/releases/latest`; build 0.2.0 simulasi menemukan 0.2.1, mengunduh `United-Setup-0.2.1.exe` (10.256.640 byte), dan lolos SHA-256 | ✅ (23 Okt 2026) |
 | UI update tersedia | build 0.2.0 simulasi: About menampilkan `United 0.2.1 is available. You have 0.2.0.`; tombol `Download & install` muncul dan aktif | ✅ (23 Okt 2026) |
 | Auto-update handoff + restart | helper PowerShell menunggu proses United keluar, menjalankan installer silent (exit 0), lalu membuka ulang app; log `update.log` mencatat `installer exit 0`, marker restart terhapus | ✅ (23 Okt 2026) |
 | Installer 0.2.2 silent | exit 0 dalam ±3 detik; versi 0.2.2, bridge ikut, `unins000.exe` + shortcut + registry dibuat | ✅ (23 Okt 2026) |
+| Installer 0.2.3 silent + uninstall | exit 0 dalam 5,3 detik; versi 0.2.3, bridge ikut, `unins000.exe`, shortcut, dan registry dibuat; uninstall exit 0 menghapus folder app, shortcut, dan registry | ✅ (23 Okt 2026) |
 | Deteksi WebView2 installer | runtime Evergreen di subfolder versi (`...\EdgeWebView\Application\155.0.4283.60\`) sekarang terdeteksi; tidak ada message box saat silent install | ✅ (23 Okt 2026, diperbaiki) |
 | `united://open/settings` | instance kedua meneruskan payload; Settings terbuka; dipakai klik toast update | ✅ (23 Okt 2026) |
-| Tombol Support United | kartu Support tampil di About dan menu tray; URL `https://tako.id/Zwart04/gift` ada di source | ✅ UI; klik ke browser belum diotomasi |
+| Badge Support United | badge gradient (hati + Tako) tampil di title bar dan Settings → About, plus menu tray; screenshot PrintWindow 1475×950 dan 975×725; URL `https://tako.id/Zwart04/gift` ada di source | ✅ UI; klik ke browser belum diotomasi |
 | Jendela muat di area kerja | 1475×950 fisik di 1920×1080; clamp WorkArea | ✅ |
 | Context menu otomatis verify-ui | sempat gagal karena foreground/instance; berhasil manual | ⚠️ skrip perlu perbaikan robustness |
 | **All messages** (`Ctrl+0`): daftar aktivitas semua layanan | daftar terisi, badge unread, klik baris membuka layanan | ✅ |
@@ -96,8 +97,9 @@ Skrip: `tools/verify-ui.ps1` + UI Automation (PowerShell), screenshot via `Print
 | Badge unread sidebar | screenshot: WhatsApp 98, Facebook 20 `(20+)`, Telegram 12, Discord 0 (bukan 2/29759), Threads 1 (dari judul `(1) Messages • Threads`); All messages 29 (saat uji) | ✅ |
 | Badge per baris vs judul | Telegram/Facebook dihitung per baris percakapan; Discord memakai ikon Direct Messages (judul `(29761)` = mention server, bukan DM); Instagram/Threads memakai angka dari `document.title` | ✅ |
 | Build hybrid 0.2.0 (22 Okt) | publish Release win-x64; `United.WhatsAppBridge.exe` 16.431.616 byte; ZIP `build/United-portable-win-x64.zip` 13.270.514 byte / 22 entry, SHA-256 `7E58F499745259089E1652EA004D1D37350D183CB749780AB783E838326B3E15`; ekstrak ZIP lalu start: app hidup, bridge hidup, status `pairing`, QR 420x420 RGB; 55/55 test | OK |
-| Build 0.2.2 (23 Okt) | publish Release win-x64; `United.WhatsAppBridge.exe` 16.431.616 byte; installer `United-Setup-0.2.2.exe` 10.266.190 byte SHA-256 `3DD12730BD306AFB9997F19E2BACB62342F10BC932ACBD50FE9BF5C98E0BFA74`; ZIP 13.286.637 byte / 22 entry (21 file + 1 folder) SHA-256 `D99457A27FD42639BB0EFD6359181C333253B3DE14EFA0DD890E47B1ECBDE8EC`; ekstrak ZIP lalu start: app hidup, bridge ada, `unins000.exe` tidak ada (portable); 68/68 test | OK |
-| Build final portable (21 Okt) | publish 13:03 dari source final; `United.dll` 229888 byte; ZIP `build/United-portable-win-x64.zip` 6.80 MB / 21 entry, SHA-256 `31A742C053CB150FFD2D533981D8CBA0F1852998E0443125EA94892F285F89E0`; string `--remote-debugging-port`/`9222` **tidak ada** di `United.dll`/`United.exe`; port 9222 = 0 saat app berjalan; start 13:03 dari folder publish → 6 observer terpasang, WhatsApp `live rows 19`, tidak ada error/warn | ✅ |
+| Build 0.2.2 (23 Okt) | publish Release win-x64; `United.WhatsAppBridge.exe` 16.431.616 byte; installer `United-Setup-0.2.2.exe` 10.266.190 byte SHA-256 `3DD12730BD306AFB9997F19E2BACB62342F10BC932ACBD50FE9BF5C98E0BFA74`; ZIP 13.286.637 byte / 22 entry (21 file + 1 folder) SHA-256 `D99457A27FD42639BB0EFD6359181C333253B3DE14EFA0DD890E47B1ECBDE8EC`; ekstrak ZIP lalu start: app hidup, bridge ada, `unins000.exe` tidak ada (portable); 68/68 test | OK (historis) |
+| Build 0.2.3 (23 Okt) | installer-only; publish Release win-x64; `United.WhatsAppBridge.exe` 16.431.616 byte; installer `United-Setup-0.2.3.exe` 10.267.766 byte SHA-256 `775B78D87A963B22E8E0F0C9E7C9F4BAE896CF5639A4B2C03972A1F72291016F`; tidak ada ZIP/portable; badge Support di title bar + About; 68/68 test | OK |
+| Build final portable (21 Okt) | publish 13:03 dari source final; `United.dll` 229888 byte; ZIP `build/United-portable-win-x64.zip` 6.80 MB / 21 entry, SHA-256 `31A742C053CB150FFD2D533981D8CBA0F1852998E0443125EA94892F285F89E0`; string `--remote-debugging-port`/`9222` **tidak ada** di `United.dll`/`United.exe`; port 9222 = 0 saat app berjalan; start 13:03 dari folder publish → 6 observer terpasang, WhatsApp `live rows 19`, tidak ada error/warn | ✅ (historis) |
 | Payload observer rusak (21 Okt) | JS memakai `String.prototype.toWellFormed` sebelum `postMessage`; host menyanitasi lone surrogate sebelum `JsonDocument.Parse`; field angka memakai `TryGetInt32` sehingga null diabaikan; build 0 warning/0 error; run final 13:03 tanpa ERROR/WARN | ✅ kode siap; belum ada event malformed baru |
 | Observer WhatsApp DOM (21 Okt) | `#pane-side` + 19 baris `cell-frame-container`; observer dipasang terlambat lewat `MutationObserver` setelah daftar muncul; log `live rows [whatsapp] 19`; judul dan preview dibaca dari span ber-`title`, bukan teks baris yang diawali label unread; dua perubahan preview nyata pukul 13:05:03 dan 13:05:16 tercatat `live activity observed` + `stored` (judul disamarkan) | ✅ |
 | All six observer tetap hidup saat jendela minimized (21 Okt) | build diagnostik sementara: heartbeat 15 detik dari keenam observer terus tercatat setelah UIA melaporkan `WindowVisualState=Minimized` dan rect `-32000,-32000`; WhatsApp/Telegram `visible`, Discord/Instagram/Threads/Facebook `hidden`; build final tidak lagi memuat heartbeat | ✅ |
@@ -105,6 +107,8 @@ Skrip: `tools/verify-ui.ps1` + UI Automation (PowerShell), screenshot via `Print
 | Notifikasi WhatsApp live + urutan masuk (21 Okt) | log `web notification received [whatsapp]` 11:00:35, 11:00:56, 11:01:34; `activity.json` menyimpan `04:00:35+00:00`, `04:00:56+00:00`, `04:01:34+00:00` (= 11:00/11:01 WIB); saat notifikasi 11:01 masuk, baris WhatsApp terbaru naik ke posisi teratas tanpa restart/reopen | ✅ |
 | Normalisasi timestamp WebView2 (21 Okt) | sebelum perbaikan notifikasi 10:50 WIB tersimpan `03:50+07:00`; setelah `NotificationTime.Normalize` tersimpan `04:00+00:00` dan tampil “now”; 14 entri WhatsApp lama dimigrasi +7 jam dan file cadangan dibuat | ✅ |
 | Urutan gabungan setelah migrasi (21 Okt) | dua baris WhatsApp uji (10:54 dan 10:34) tampil di antara entri Telegram sesuai waktunya; tidak ada lagi baris WhatsApp baru bertanggal 03:xx | ✅ |
+
+> Baris ZIP/portable di atas adalah riwayat 0.1.0–0.2.2. Sejak 0.2.3 United hanya didistribusikan sebagai installer; tidak ada aset portable di rilis.
 
 ## 3. Belum diuji (jangan diklaim)
 

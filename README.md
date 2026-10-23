@@ -1,16 +1,28 @@
 # United Messenger
 
-[![Support United on Tako](https://img.shields.io/badge/Support%20United-Tako-ff5e5b?style=flat-square)](https://tako.id/Zwart04/gift)
-[![Latest release](https://img.shields.io/github/v/release/Zwart04/United?style=flat-square)](https://github.com/Zwart04/United/releases/latest)
+<p align="center">
+  <a href="https://tako.id/Zwart04/gift" title="Support United on Tako">
+    <img src=".github/assets/support-united.png" alt="Support United on Tako" width="440">
+  </a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/Zwart04/United/releases/latest">
+    <img src="https://img.shields.io/badge/Download-Installer-2EA44F?style=for-the-badge&logo=windows&logoColor=white" alt="Download installer">
+  </a>
+  <a href="https://github.com/Zwart04/United/releases/latest">
+    <img src="https://img.shields.io/github/v/release/Zwart04/United?style=for-the-badge&color=FF5E7A" alt="Latest release">
+  </a>
+</p>
 
 Satu aplikasi Windows yang ringan untuk **WhatsApp, Facebook, Instagram, Telegram, Discord, Threads** — plus layanan lain yang Anda tambahkan sendiri (X, Messenger, Reddit, LinkedIn, Bluesky, YouTube, atau situs apa pun).
 
 United adalah shell desktop berbasis **.NET 10 + WebView2** yang membuka situs resmi setiap layanan di profil terisolasi. Sesi login tersimpan, notifikasi memakai toast Windows asli, sidebar dibuat minimal, dan ada mode hemat memori. Tidak ada backend cloud dan tidak ada data yang dikirim ke pihak ketiga selain situs layanan itu sendiri (plus pengecekan rilis GitHub bila auto-update aktif). Sejak 0.2.1, WhatsApp punya **mode native opsional** (hybrid): helper `whatsmeow` mengumpulkan preview saat WebView WhatsApp tidur, lalu WebView bangun hanya ketika Anda membuka chat untuk membaca/membalas.
 
-> Status: **0.2.2** · Windows 10 2004+ / Windows 11 · x64
+> Status: **0.2.3** · Windows 10 2004+ / Windows 11 · x64
 > UI aplikasi berbahasa Inggris; dokumentasi ini berbahasa Indonesia.
 >
-> **Unduh installer:** [Releases](https://github.com/Zwart04/United/releases/latest) · build portable juga tersedia · butuh .NET 10 Desktop Runtime dan WebView2 Runtime.
+> **Unduh installer:** [Releases](https://github.com/Zwart04/United/releases/latest) · installer-only, tanpa ZIP portable · butuh .NET 10 Desktop Runtime dan WebView2 Runtime.
 
 ![Halaman Services](docs/images/services-top.png)
 
@@ -19,8 +31,8 @@ United adalah shell desktop berbasis **.NET 10 + WebView2** yang membuka situs r
 - **6 layanan bawaan**: WhatsApp, Facebook, Instagram, Telegram, Discord, Threads.
 - **6 layanan opsional sekali klik**: X, Messenger, Reddit, LinkedIn, Bluesky, YouTube.
 - **WhatsApp hybrid (0.2.1)**: setelah scan QR sekali di Settings, WhatsApp WebView tetap tidur dan pesan masuk tetap tampil di All messages. Klik chat untuk membangunkan WebView resmi dan membalas. Ini menghemat sekitar **900 MB private / 985 MB working set** pada mesin uji (lihat [docs/VERIFICATION.md](docs/VERIFICATION.md)).
-- **Update otomatis (0.2.2)**: cek GitHub Releases saat startup (bisa dimatikan), unduh installer, verifikasi SHA-256, pasang secara silent, lalu buka ulang United. Build portable diarahkan ke halaman Releases.
-- **Dukung United**: tombol Support di Settings → About dan menu tray, plus tombol Sponsor di halaman GitHub repo.
+- **Update otomatis (0.2.2+)**: cek GitHub Releases saat startup (bisa dimatikan), unduh installer, verifikasi SHA-256, pasang secara silent, lalu buka ulang United.
+- **Dukung United**: badge **Support United** di title bar dan Settings → About, item Support di menu tray, plus badge support besar dan tombol Sponsor di halaman GitHub repo.
 - **Tambah situs apa pun** lewat dialog (nama, URL, logo, mode notifikasi) atau `services.json`.
 - **Logo bisa diganti sendiri** per layanan — PNG/JPG/ICO/BMP/GIF, dinormalisasi ke PNG maksimal 256 px. Lihat [docs/LOGOS.md](docs/LOGOS.md).
 - **Sesi terisolasi** per layanan; login sekali, tetap tersimpan setelah restart.
@@ -31,7 +43,7 @@ United adalah shell desktop berbasis **.NET 10 + WebView2** yang membuka situs r
 - **Login OAuth di dalam aplikasi**: host login umum (Google, Apple, Microsoft, Steam, YouTube) dibuka sebagai popup United dengan profil sesi yang sama, jadi Anda tidak keluar ke browser.
 - **Hemat memori**: satu proses Chromium bersama, mode low-memory untuk layanan latar, dan hibernate total untuk melepas RAM.
 - **Tray + autostart**, close-to-tray, tema terang/gelap/mengikuti sistem (halaman web ikut tema United), deep link `united://` untuk klik toast.
-- **Installer Inno Setup + build portable**: installer per-user dengan auto-update dan uninstaller; ZIP portable untuk tanpa instalasi. Data pengguna tetap di `%LOCALAPPDATA%\United`.
+- **Installer Inno Setup (installer-only)**: installer per-user dengan auto-update dan uninstaller. Tidak ada build portable. Data pengguna tetap di `%LOCALAPPDATA%\United`.
 
 ## Mulai cepat
 
@@ -50,12 +62,6 @@ United adalah shell desktop berbasis **.NET 10 + WebView2** yang membuka situs r
 $env:Path = "$env:LOCALAPPDATA\Microsoft\dotnet;$env:Path"   # mesin pengembangan ini
 dotnet build src\United.slnx
 src\United.App\bin\Debug\net10.0-windows10.0.19041.0\United.exe
-```
-
-Atau pakai folder portable hasil publish:
-
-```
-build\United-portable-win-x64\United.exe
 ```
 
 Saat pertama dibuka, sidebar berisi 6 layanan. Klik ikon layanan, lalu login seperti di browser biasa. Untuk WhatsApp, pindai QR dari ponsel. Setelah login, sesi tersimpan di `%LOCALAPPDATA%\United\WebData`.
@@ -77,8 +83,7 @@ Buka **Settings → About** untuk melihat status versi dan tombol **Check for up
 - **Check for updates automatically at startup** aktif secara default dan dibatasi maksimal sekali per 24 jam.
 - Jika ada rilis baru, United mengunduh `United-Setup-<versi>.exe` dari GitHub Releases, memeriksa **SHA-256** yang diterbitkan bersama rilis, menjalankan installer Inno Setup secara silent, lalu membuka ulang aplikasi.
 - Tombol **Download & install** meminta konfirmasi sebelum memasang. Tidak ada update yang dipasang tanpa persetujuan.
-- Build **portable** tidak dapat memasang update ke dalam foldernya sendiri; tombol update akan membuka halaman Releases agar Anda bisa mengunduh ZIP terbaru.
-- Auto-update hanya memeriksa `Zwart04/United` di GitHub. Tidak ada server update pihak ketiga.
+- United hanya didistribusikan sebagai **installer**; tidak ada ZIP portable. Auto-update hanya memeriksa `Zwart04/United` di GitHub dan tidak memakai server update pihak ketiga.
 
 ## Dukung United
 
@@ -86,7 +91,7 @@ United gratis dan open source. Jika aplikasi ini bermanfaat, Anda bisa memberi d
 
 **https://tako.id/Zwart04/gift**
 
-Tombol **Support United** tersedia di **Settings → About** dan menu tray. Di halaman GitHub, tombol **Sponsor** muncul dari [`.github/FUNDING.yml`](.github/FUNDING.yml). Dukungan bersifat opsional dan tidak mengubah fitur aplikasi.
+Badge **Support United** selalu terlihat di **title bar** aplikasi, plus di **Settings → About** dan menu tray. Di halaman GitHub, badge support besar tampil di bagian atas README dan tombol **Sponsor** muncul dari [`.github/FUNDING.yml`](.github/FUNDING.yml). Dukungan bersifat opsional dan tidak mengubah fitur aplikasi.
 
 **Penting:** tutup jendela dengan tombol **X** akan menyembunyikan aplikasi ke tray (default), bukan keluar. Keluar sepenuhnya lewat menu tray → **Quit**, atau matikan opsi close-to-tray di Settings.
 
@@ -143,37 +148,22 @@ dotnet build src\United.slnx
 dotnet test  src\United.slnx
 ```
 
-Publish portable (framework-dependent, butuh .NET 10 Desktop Runtime):
+Build native WhatsApp helper (butuh Go + C compiler; harus dibangun **sebelum** publish agar ikut ke installer):
 
-> Hentikan United dulu — `Compress-Archive` gagal jika DLL sedang dipakai. Alternatif: salin folder publish ke staging, lalu compress staging.
+```powershell
+.\tools\build-native.ps1
+```
+
+Publish app + installer (framework-dependent, butuh .NET 10 Desktop Runtime dan Inno Setup 6):
 
 ```powershell
 dotnet publish src\United.App\United.App.csproj -c Release -r win-x64 --self-contained false `
-  -o build\United-portable-win-x64
-Compress-Archive -Path build\United-portable-win-x64\* `
-  -DestinationPath build\United-portable-win-x64.zip -Force
-```
-
-Installer (butuh Inno Setup 6; build native helper dulu jika belum):
-
-```powershell
-.\tools\build-native.ps1
+  -o build\United-win-x64
 .\tools\build-installer.ps1
-# hasil: build\United-Setup-0.2.2.exe
+# hasil: build\United-Setup-0.2.3.exe
 ```
 
-Self-contained (lebih besar, tanpa prasyarat .NET):
-
-```powershell
-dotnet publish src\United.App\United.App.csproj -c Release -r win-x64 --self-contained true `
-  -o build\United-selfcontained-win-x64
-```
-
-Native WhatsApp helper (butuh Go + C compiler; hasilnya ikut tercopy saat publish):
-
-```powershell
-.\tools\build-native.ps1
-```
+Tidak ada langkah ZIP/portable. Distribusi hanya installer.
 
 ## Struktur repo
 
@@ -218,7 +208,7 @@ Kode aplikasi: MIT (lihat [LICENSE](LICENSE)). Paket pihak ketiga: .NET 10, WPF,
 - Enam layanan bawaan sudah dipakai dengan akun nyata. Notifikasi nyata end-to-end baru terbukti untuk Telegram dan WhatsApp; empat layanan lain diverifikasi lewat observer DOM dengan perubahan DOM terkontrol, belum dengan pesan masuk dari akun lain.
 - End-to-end toast click routing belum diuji dengan notifikasi nyata.
 - SVG/WebP tidak didukung untuk logo kustom; GIF animasi tidak dipertahankan.
-- Installer resmi tersedia (`United-Setup-0.2.2.exe`); data pengguna tetap di `%LOCALAPPDATA%\United` dan tidak dihapus saat uninstall.
-- Auto-update di dalam aplikasi hanya untuk build installer. Build portable harus mengunduh ZIP baru secara manual dari Releases. Installer belum ditandatangani secara digital, jadi SmartScreen dapat menampilkan peringatan saat pertama kali dijalankan.
+- Installer resmi tersedia (`United-Setup-0.2.3.exe`); tidak ada build portable. Data pengguna tetap di `%LOCALAPPDATA%\United` dan tidak dihapus saat uninstall.
+- Auto-update membutuhkan build installer. Installer belum ditandatangani secara digital, jadi SmartScreen dapat menampilkan peringatan saat pertama kali dijalankan.
 
 Daftar lengkap: [docs/KNOWN-LIMITATIONS.md](docs/KNOWN-LIMITATIONS.md).

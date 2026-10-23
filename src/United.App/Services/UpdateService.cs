@@ -62,7 +62,7 @@ public sealed class UpdateService
 
     public string? LastError { get; private set; }
 
-    /// <summary>Inno Setup installs <c>unins000.exe</c>. Portable ZIP builds do not have it.</summary>
+    /// <summary>Inno Setup installs <c>unins000.exe</c>; it marks a build that can update itself.</summary>
     public bool IsInstalledBuild =>
         File.Exists(Path.Combine(AppContext.BaseDirectory, "unins000.exe"));
 
@@ -248,7 +248,7 @@ public sealed class UpdateService
     {
         if (!IsInstalledBuild)
         {
-            AppLog.Warn("auto-update requested from a portable build; opening releases page instead");
+            AppLog.Warn("auto-update requested from a non-installed build; opening releases page instead");
             return false;
         }
 

@@ -57,11 +57,9 @@ Jika .NET belum ada, aplikasi akan menampilkan dialog runtime yang mengarah ke h
 
 ### 2.2 Menjalankan
 
-**Dari folder portable:**
+**Dari installer:**
 
-```
-build\United-portable-win-x64\United.exe
-```
+Jalankan `United-Setup-0.2.3.exe` dari halaman Releases, lalu buka **United Messenger** dari Start Menu. Tidak ada build portable.
 
 **Dari source (development):**
 
@@ -626,18 +624,10 @@ Memindahkan sesi login ke PC lain bersifat best-effort; WebView2 dapat mengangga
 
 ### 13.5 Uninstall
 
-**Build installer:** buka **Windows Settings → Apps → United Messenger → Uninstall**, atau jalankan
-`unins000.exe` di folder instalasi. Uninstaller menghapus aplikasi, shortcut, dan entri registry;
-data di `%LOCALAPPDATA%\United` **tidak** dihapus.
-
-**Build portable:**
-
-1. Quit United.
-2. Matikan autostart di Settings.
-3. Hapus folder aplikasi (portable).
-4. Hapus `%LOCALAPPDATA%\United`.
-5. Hapus shortcut `%APPDATA%\Microsoft\Windows\Start Menu\Programs\United Messenger`.
-6. (Opsional) Hapus `HKCU\Software\Classes\united`.
+Buka **Windows Settings → Apps → United Messenger → Uninstall**, atau jalankan `unins000.exe` di
+folder instalasi. Uninstaller menghapus aplikasi, shortcut, dan entri registry; data di
+`%LOCALAPPDATA%\United` **tidak** dihapus. Jika ingin menghapus data juga, hapus folder tersebut
+secara manual setelah uninstall.
 
 ### 13.6 Update otomatis & dukungan
 
@@ -647,10 +637,8 @@ Buka **Settings → About**.
 - **Check for updates automatically at startup** aktif secara default, maksimal sekali per 24 jam.
 - **Download & install** mengunduh installer resmi, memverifikasi SHA-256, menjalankan installer
   silent, lalu membuka ulang United. Tidak ada update yang dipasang tanpa konfirmasi.
-- Build **portable** tidak bisa memasang update ke foldernya sendiri; tombol update membuka halaman
-  Releases.
-- **Support United** membuka halaman dukungan Tako. Tombol yang sama ada di menu tray dan di halaman
-  GitHub repo.
+- **Support United** membuka halaman dukungan Tako. Badge yang sama selalu tampil di title bar,
+  plus di Settings → About, menu tray, dan halaman GitHub repo.
 
 Log helper update ada di `%LOCALAPPDATA%\United\updates\update.log`.
 
@@ -704,33 +692,19 @@ dotnet test  src\United.slnx
 
 Saat dokumen ini dibuat: **0 warning, 0 error**, **68/68 test lulus**.
 
-### 15.2 Publish portable dan installer
+### 15.2 Publish installer
 
-Framework-dependent (kecil; butuh .NET 10 Desktop Runtime):
+Framework-dependent (butuh .NET 10 Desktop Runtime). Build helper native dulu agar ikut ke publish:
 
 ```powershell
-dotnet build src\United.App\United.App.csproj -c Release -r win-x64 --self-contained false -t:Rebuild
+.\tools\build-native.ps1
 dotnet publish src\United.App\United.App.csproj -c Release -r win-x64 --self-contained false `
-  -o build\United-portable-win-x64
-Compress-Archive -Path build\United-portable-win-x64\* `
-  -DestinationPath build\United-portable-win-x64.zip -Force
-```
-
-Self-contained (besar; tidak butuh .NET terpasang):
-
-```powershell
-dotnet publish src\United.App\United.App.csproj -c Release -r win-x64 --self-contained true `
-  -o build\United-selfcontained-win-x64
-```
-
-Installer (butuh Inno Setup 6):
-
-```powershell
+  -o build\United-win-x64
 .\tools\build-installer.ps1
-# hasil: build\United-Setup-0.2.2.exe
+# hasil: build\United-Setup-0.2.3.exe
 ```
 
-Data tetap berada di `%LOCALAPPDATA%\United`; memindahkan folder aplikasi **tidak** memindahkan sesi.
+Tidak ada langkah ZIP/portable. Distribusi hanya installer.
 
 ### 15.3 Struktur source
 
@@ -771,10 +745,11 @@ Skrip membuka aplikasi, berpindah layanan, membuka Settings, hibernate/resume, d
 **Sudah diverifikasi di mesin pengembangan (23 Okt 2026):**
 
 - Build & 68 unit test, 0 warning/0 error.
-- Installer 0.2.2: silent install/upgrade, versi, bridge, shortcut, registry, dan uninstall.
+- Installer 0.2.3: silent install/upgrade, versi, bridge, shortcut, registry, dan uninstall.
+- Distribusi installer-only; tidak ada aset ZIP portable di rilis.
 - Auto-update: cek GitHub Releases nyata, unduh installer, verifikasi SHA-256, helper menunggu app
   keluar, installer exit 0, dan app dibuka ulang.
-- UI update tersedia (build 0.2.0 simulasi) dan link Support di Settings → About.
+- UI update tersedia dan badge **Support United** tampil di title bar serta Settings → About.
 - Deteksi WebView2 installer untuk runtime di subfolder versi.
 - Facebook tampil sebagai layanan default + migrasi settings lama (unit test).
 - Halaman login Facebook dimuat di WebView.

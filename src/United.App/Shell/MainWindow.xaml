@@ -48,6 +48,20 @@
                 </StackPanel>
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal">
+                    <Button Style="{StaticResource SupportBadge}" Click="SupportUnited_Click"
+                            Margin="0,7,8,7" Padding="10,4" ToolTip="Support United on Tako">
+                        <StackPanel Orientation="Horizontal">
+                            <Path Data="{StaticResource Icon.Heart}" Fill="White" Width="12" Height="12"
+                                  Stretch="Uniform" VerticalAlignment="Center" />
+                            <TextBlock Text="Support" Foreground="White" FontSize="11.5"
+                                       FontWeight="SemiBold" Margin="6,0,0,0" VerticalAlignment="Center" />
+                            <Border Background="#2EFFFFFF" CornerRadius="7" Padding="5,1"
+                                    Margin="7,0,0,0" VerticalAlignment="Center">
+                                <TextBlock Text="Tako" Foreground="White" FontSize="9"
+                                           FontWeight="SemiBold" />
+                            </Border>
+                        </StackPanel>
+                    </Button>
                     <Button Style="{StaticResource CaptionButton}" Click="Min_Click"
                             ToolTip="Minimize">
                         <Path Data="M0,0.5 H10" Stretch="None"

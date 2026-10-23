@@ -25,7 +25,7 @@ go build -trimpath -ldflags "-s -w" -o United.WhatsAppBridge.exe .
 ```
 
 The resulting `United.WhatsAppBridge.exe` is copied by the app project when it
-exists and is included in the release zip. The binary itself is ignored by git.
+exists and is included in the release installer. The binary itself is ignored by git.
 
 ## Runtime files
 

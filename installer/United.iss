@@ -1,10 +1,10 @@
 ; United Messenger installer (Inno Setup).
 ; Build the app first:
-;   dotnet publish src\United.App\United.App.csproj -c Release -r win-x64 --self-contained false -o build\United-portable-win-x64
+;   dotnet publish src\United.App\United.App.csproj -c Release -r win-x64 --self-contained false -o build\United-win-x64
 ; Then compile this file with ISCC.exe. See tools\build-installer.ps1.
 
 #define MyAppName "United Messenger"
-#define MyAppVersion "0.2.2"
+#define MyAppVersion "0.2.3"
 #define MyAppPublisher "United"
 #define MyAppExeName "United.exe"
 #define MyAppId "{{7E5B2C5A-3F1D-4B8E-9C2A-4D6F8A1B3C70}"
@@ -42,7 +42,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "Create a desktop shortcut"; GroupDescription: "Additional icons:"; Flags: unchecked
 
 [Files]
-Source: "..\build\United-portable-win-x64\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\build\United-win-x64\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{autoprograms}\United Messenger"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"

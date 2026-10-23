@@ -24,7 +24,7 @@ if (-not $Iscc -or -not (Test-Path $Iscc)) {
     throw "ISCC.exe (Inno Setup) not found. Install Inno Setup or pass -Iscc <path> / set `$env:ISCC."
 }
 
-$publish = Join-Path $root 'build\United-portable-win-x64'
+$publish = Join-Path $root 'build\United-win-x64'
 $exe = Join-Path $publish 'United.exe'
 if (-not (Test-Path $exe)) {
     throw "Published app not found at $publish. Run dotnet publish first."

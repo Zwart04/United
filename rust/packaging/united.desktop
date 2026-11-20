@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=United
+GenericName=Unified Messenger
+Comment=All your chats in one native window: WhatsApp, Telegram, Discord
+Exec=united
+Icon=united
+Terminal=false
+Categories=Network;InstantMessaging;Chat;
+Keywords=chat;messenger;whatsapp;telegram;discord;
+StartupNotify=true
+StartupWMClass=com.davdigi.United

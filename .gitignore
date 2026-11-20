@@ -43,3 +43,6 @@ secrets.json
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Rust
+rust/target/

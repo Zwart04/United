@@ -1,0 +1,17 @@
+[package]
+name = "united-telegram"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+united-core = { path = "../united-core" }
+anyhow.workspace = true
+async-trait.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tokio.workspace = true
+log.workspace = true
+grammers-client = "0.12"
+grammers-session = { version = "0.12", default-features = false, features = ["serde"] }

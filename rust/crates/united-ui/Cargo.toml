@@ -1,0 +1,32 @@
+[package]
+name = "united-ui"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+united-core = { path = "../united-core" }
+anyhow.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tokio.workspace = true
+log.workspace = true
+eframe.workspace = true
+egui.workspace = true
+egui_extras.workspace = true
+qrcode = "0.14"
+chrono.workspace = true
+notify-rust = "4"
+base64 = "0.22"
+arboard = { version = "3", features = ["wayland-data-control"] }
+skrifa = "0.44"
+# Colour emoji: the shaper picks the CBDT face's flag/keycap/family ligature.
+harfrust = "0.12"
+unicode-segmentation = "1"
+# Arabic script: egui lays text out per code point, so the shaper and the
+# bidi reorder run before layout (see widgets::display_text).
+arabic_reshaper = "0.4"
+unicode-bidi = "0.3"
+image = { version = "0.25", default-features = false, features = ["png", "jpeg", "webp", "gif"] }
+rfd = { version = "0.18.0", default-features = false, features = ["xdg-portal"] }

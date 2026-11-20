@@ -15,6 +15,11 @@
   </a>
 </p>
 
+> **Rust rewrite:** versi native tanpa WebView ada di [`rust/`](rust) — lihat
+> [docs/RUST.md](docs/RUST.md). Isi README di bawah menjelaskan rilis .NET 10 +
+> WebView2 (0.2.3) yang masih menjadi rilis Windows saat ini. Di Linux, versi
+> Rust adalah jalur yang didukung: `cargo build --release -p united-app`.
+
 Satu aplikasi Windows yang ringan untuk **WhatsApp, Facebook, Instagram, Telegram, Discord, Threads** — plus layanan lain yang Anda tambahkan sendiri (X, Messenger, Reddit, LinkedIn, Bluesky, YouTube, atau situs apa pun).
 
 United adalah shell desktop berbasis **.NET 10 + WebView2** yang membuka situs resmi setiap layanan di profil terisolasi. Sesi login tersimpan, notifikasi memakai toast Windows asli, sidebar dibuat minimal, dan ada mode hemat memori. Tidak ada backend cloud dan tidak ada data yang dikirim ke pihak ketiga selain situs layanan itu sendiri (plus pengecekan rilis GitHub bila auto-update aktif). Sejak 0.2.1, WhatsApp punya **mode native opsional** (hybrid): helper `whatsmeow` mengumpulkan preview saat WebView WhatsApp tidur, lalu WebView bangun hanya ketika Anda membuka chat untuk membaca/membalas.

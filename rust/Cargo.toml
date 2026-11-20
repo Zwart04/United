@@ -1,0 +1,41 @@
+[workspace]
+resolver = "3"
+members = [
+    "crates/united-core",
+    "crates/united-ui",
+    "crates/united-app",
+    "crates/united-whatsapp",
+    "crates/united-telegram",
+    "crates/united-discord",
+]
+
+[workspace.package]
+version = "0.3.0"
+edition = "2024"
+rust-version = "1.98"
+license = "MIT"
+repository = "https://github.com/Zwart04/United"
+
+[workspace.dependencies]
+anyhow = "1"
+async-trait = "0.1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync", "time", "fs", "net", "io-util"] }
+rusqlite = { version = "0.40", features = ["bundled"] }
+log = "0.4"
+env_logger = "0.11"
+directories = "6"
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "multipart", "rustls-tls", "gzip"] }
+thiserror = "2"
+eframe = { version = "0.36.2", default-features = false, features = ["glow", "wayland", "x11", "default_fonts", "persistence", "accesskit"] }
+egui = "0.36.2"
+egui_extras = { version = "0.36.2", features = ["svg"] }
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+panic = "abort"
+strip = true

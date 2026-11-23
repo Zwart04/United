@@ -175,6 +175,7 @@ impl WhatsAppAdapter {
         let history_bus = bus.clone();
         let history_account = account.clone();
         let history_targets = targets.clone();
+        let history_channels = group_titles.clone();
         let contact_bus = bus.clone();
         let contact_account = account.clone();
         let receipt_bus = bus.clone();
@@ -290,6 +291,23 @@ impl WhatsAppAdapter {
                         // the chats and messages written before the rename. The
                         // phone number is display state, so it lives in `label`.
                         *label.lock().unwrap() = format!("+{}", jid.user);
+                        // The profile rail shows the account photo. It is
+                        // published under the pseudo-JID "me" so the shell does
+                        // not need to know the phone-number JID.
+                        let avatar_client = client.clone();
+                        let avatar_bus = bus.clone();
+                        tokio::spawn(async move {
+                            match fetch_avatar(&avatar_client, &jid).await {
+                                Ok(Some(path)) => avatar_bus.publish(CoreEvent::SenderAvatar {
+                                    account: "whatsapp:me".into(),
+                                    service: Service::WhatsApp,
+                                    jid: "me".into(),
+                                    path,
+                                }),
+                                Ok(None) => {}
+                                Err(err) => log::debug!("own avatar failed: {err:#}"),
+                            }
+                        });
                     }
                     *prompt.lock().unwrap() = None;
                     bus.publish(CoreEvent::Status {
@@ -332,10 +350,9 @@ impl WhatsAppAdapter {
                 let group_titles = group_titles.clone();
                 async move {
                     let raw_jid = ctx.info.source.chat.clone();
-                    // Channels and status broadcasts are not conversations.
-                    if raw_jid.server.as_str() == "newsletter"
-                        || raw_jid.server.as_str() == "broadcast"
-                    {
+                    // Status broadcasts are not conversations. Channels
+                    // (newsletters) are, but live in their own tab.
+                    if raw_jid.server.as_str() == "broadcast" {
                         return;
                     }
                     // WhatsApp addresses chats by LID on newer accounts while
@@ -587,6 +604,41 @@ impl WhatsAppAdapter {
                             }});
                         });
                     }
+                    if chat_jid.server.as_str() == "newsletter" {
+                        // A channel's own name and picture only come from its
+                        // metadata; without this the row shows the numeric JID.
+                        let client = ctx.client.clone();
+                        let bus = bus.clone();
+                        let account = account_id.clone();
+                        let chat_id = chat_id.clone();
+                        let jid = chat_jid.clone();
+                        let seen = group_titles.clone();
+                        let preview = body.clone();
+                        let preview_sender = preview_sender.clone();
+                        tokio::spawn(async move {
+                            if !seen.lock().unwrap().insert(format!("newsletter:{chat_id}")) {
+                                return;
+                            }
+                            let Some((title, avatar)) = fetch_newsletter(&client, &jid).await
+                            else {
+                                return;
+                            };
+                            bus.publish(CoreEvent::ChatUpsert { chat: Chat {
+                                id: chat_id.clone(),
+                                account,
+                                service: Service::WhatsApp,
+                                title,
+                                is_group: false,
+                                avatar,
+                                unread: 0,
+                                muted: false,
+                                last_at: at,
+                                preview,
+                                preview_sender,
+                                target: chat_id,
+                            }});
+                        });
+                    }
                     bus.publish(CoreEvent::ChatUpsert { chat: Chat {
                         id: chat_id.clone(),
                         account: account_id,
@@ -607,6 +659,7 @@ impl WhatsAppAdapter {
                 let bus = history_bus.clone();
                 let account = history_account.clone();
                 let targets = history_targets.clone();
+                let channels = history_channels.clone();
                 async move {
                     let Event::HistorySync(chunk) = &*event else {
                         return;
@@ -662,6 +715,7 @@ impl WhatsAppAdapter {
                     log::info!(
                         "whatsapp history sync type={sync_type} conversations={conversations} messages={stored}"
                     );
+                    refresh_channels(&client, &bus, &channels).await;
                 }
             })
             // Names come from the phone's address book, or from the name the
@@ -1634,7 +1688,7 @@ fn normalize_jid(raw: &str) -> String {
 
 /// Turn one history-sync conversation into a chat plus its most recent
 /// messages. Returns `None` for conversations this shell cannot render
-/// (status broadcasts, newsletters).
+/// (status broadcasts). Channels are kept: they have their own tab.
 fn history_chat(
     conversation: &whatsapp_rust::waproto::whatsapp::Conversation,
     account: &str,
@@ -1647,7 +1701,7 @@ fn history_chat(
     {
         target = pn.to_string();
     }
-    if target.is_empty() || target.ends_with("@broadcast") || target.ends_with("@newsletter") {
+    if target.is_empty() || target.ends_with("@broadcast") {
         return None;
     }
     let is_group = target.ends_with("@g.us");
@@ -2260,16 +2314,23 @@ async fn fetch_picture(client: &Client, jid: &Jid) -> Result<Option<String>> {
             None => return Ok(None),
         },
     };
-    let response = reqwest::get(&picture.url)
+    download_avatar(jid, &picture.url).await
+}
+
+/// Cache one avatar bitmap under the JID's own file name and hand back its
+/// path. Sharing this keeps newsletter pictures in the same cache the UI
+/// already reads for contacts.
+async fn download_avatar(jid: &Jid, url: &str) -> Result<Option<String>> {
+    let response = reqwest::get(url)
         .await
-        .map_err(|e| anyhow!("profile picture download: {e}"))?;
+        .map_err(|e| anyhow!("avatar download: {e}"))?;
     if !response.status().is_success() {
         return Ok(None);
     }
     let bytes = response
         .bytes()
         .await
-        .map_err(|e| anyhow!("profile picture body: {e}"))?;
+        .map_err(|e| anyhow!("avatar body: {e}"))?;
     let dir = united_core::paths::service_dir("whatsapp").join("avatars");
     std::fs::create_dir_all(&dir)?;
     let name: String = jid
@@ -2280,6 +2341,58 @@ async fn fetch_picture(client: &Client, jid: &Jid) -> Result<Option<String>> {
     let path = dir.join(format!("{name}.jpg"));
     std::fs::write(&path, &bytes)?;
     Ok(Some(path.display().to_string()))
+}
+
+/// Channels are newsletters: history sync carries their JID but no display
+/// name, so the Channels tab used to show the raw JID. Fetch the metadata the
+/// same way the web client does and store the real title plus picture.
+async fn fetch_newsletter(client: &Client, jid: &Jid) -> Option<(String, Option<String>)> {
+    let meta = client.newsletter().get_metadata(jid).await.ok()?;
+    let name = meta.name.trim().to_string();
+    if name.is_empty() {
+        return None;
+    }
+    let avatar = match meta.picture_url.as_deref() {
+        Some(url) => download_avatar(jid, url).await.ok().flatten(),
+        None => None,
+    };
+    Some((name, avatar))
+}
+
+/// Channels are newsletters: history sync carries their JID but no display
+/// name, so the Channels tab used to show the raw JID. One `list_subscribed`
+/// call carries every name and picture; patch the rows that already exist.
+async fn refresh_channels(client: &Client, bus: &EventBus, seen: &Arc<Mutex<HashSet<String>>>) {
+    if !seen.lock().unwrap().insert("channels:list".into()) {
+        return;
+    }
+    let Ok(store) = united_core::Store::shared() else {
+        return;
+    };
+    let Ok(items) = client.newsletter().list_subscribed().await else {
+        log::warn!("whatsapp: newsletter list failed");
+        return;
+    };
+    for meta in items {
+        let title = meta.name.trim().to_string();
+        if title.is_empty() {
+            continue;
+        }
+        let id = meta.jid.to_string();
+        let Ok(Some(mut chat)) = store.chat("whatsapp:me", &id) else {
+            continue;
+        };
+        if chat.title == title && chat.avatar.is_some() {
+            continue;
+        }
+        chat.title = title;
+        if let Some(url) = meta.picture_url.as_deref()
+            && let Ok(Some(path)) = download_avatar(&meta.jid, url).await
+        {
+            chat.avatar = Some(path);
+        }
+        bus.publish(CoreEvent::ChatUpsert { chat });
+    }
 }
 
 /// Newer WhatsApp accounts address a chat by LID (`…@lid`); history sync and

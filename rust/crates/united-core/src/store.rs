@@ -5,7 +5,9 @@ use std::sync::Mutex;
 use anyhow::{Context, Result};
 use rusqlite::{Connection, OptionalExtension, params};
 
-use crate::model::{AccountId, Chat, MediaRef, Message, MessageStatus, Service, now_secs};
+use crate::model::{
+    AccountId, CallEntry, Chat, MediaRef, Message, MessageStatus, Service, now_secs,
+};
 
 /// Person key used by `contacts`: JID user part without a device suffix.
 fn contact_key(id: &str) -> &str {
@@ -834,6 +836,7 @@ impl Store {
                     "SELECT account_id, id, service, title, is_group, avatar, unread, muted,
                             last_at, preview, preview_sender, target
                      FROM chats WHERE service=?1
+                       AND id NOT LIKE '%@newsletter'
                        AND NOT (is_group=0 AND title NOT GLOB '*[^0-9+∙ ]*'
                                 AND NOT EXISTS (SELECT 1 FROM messages m
                                                 WHERE m.account_id=chats.account_id
@@ -850,7 +853,8 @@ impl Store {
                     "SELECT account_id, id, service, title, is_group, avatar, unread, muted,
                             last_at, preview, preview_sender, target
                      FROM chats
-                     WHERE NOT (is_group=0 AND title NOT GLOB '*[^0-9+∙ ]*'
+                     WHERE id NOT LIKE '%@newsletter'
+                       AND NOT (is_group=0 AND title NOT GLOB '*[^0-9+∙ ]*'
                                 AND NOT EXISTS (SELECT 1 FROM messages m
                                                 WHERE m.account_id=chats.account_id
                                                   AND m.chat_id=chats.id))
@@ -861,6 +865,119 @@ impl Store {
                     out.push(r?);
                 }
             }
+        }
+        Ok(out)
+    }
+
+    /// Channels (WhatsApp newsletters) are chats too, but they stay out of the
+    /// inbox and are listed in their own tab.
+    pub fn channels(&self, service: Service, limit: usize) -> Result<Vec<Chat>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT account_id, id, service, title, is_group, avatar, unread, muted,
+                    last_at, preview, preview_sender, target
+             FROM chats WHERE service=?1 AND id LIKE '%@newsletter'
+             ORDER BY last_at DESC LIMIT ?2",
+        )?;
+        let rows = stmt.query_map(params![service.id(), limit as i64], row_to_chat)?;
+        let mut out = Vec::new();
+        for row in rows {
+            out.push(row?);
+        }
+        Ok(out)
+    }
+
+    /// Every stored attachment for a service, newest first. The Media sheet
+    /// only needs the descriptor and the chat it came from.
+    pub fn media_messages(&self, service: Service, limit: usize) -> Result<Vec<Message>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT account_id, chat_id, id, service, sender_id, sender_name, body, at,
+                    outgoing, status, media, reply_to
+             FROM messages
+             WHERE service=?1 AND media IS NOT NULL AND media <> ''
+             ORDER BY at DESC, rowid DESC LIMIT ?2",
+        )?;
+        let rows = stmt.query_map(params![service.id(), limit as i64], row_to_message)?;
+        let mut out = Vec::new();
+        for row in rows {
+            out.push(row?);
+        }
+        Ok(out)
+    }
+
+    /// Messages that carry a URL, for the Media sheet's Links tab.
+    pub fn link_messages(&self, service: Service, limit: usize) -> Result<Vec<Message>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT account_id, chat_id, id, service, sender_id, sender_name, body, at,
+                    outgoing, status, media, reply_to
+             FROM messages
+             WHERE service=?1 AND body LIKE '%http%'
+             ORDER BY at DESC, rowid DESC LIMIT ?2",
+        )?;
+        let rows = stmt.query_map(params![service.id(), limit as i64], row_to_message)?;
+        let mut out = Vec::new();
+        for row in rows {
+            out.push(row?);
+        }
+        Ok(out)
+    }
+
+    /// Record a call state. The first event inserts, later ones only raise the
+    /// flags, so a ring that is answered and then hung up stays one row.
+    #[allow(clippy::too_many_arguments)]
+    pub fn log_call(
+        &self,
+        account: &str,
+        chat_id: &str,
+        call_id: &str,
+        outgoing: bool,
+        answered: bool,
+        ended: bool,
+        at: i64,
+    ) -> Result<()> {
+        let conn = self.conn.lock().unwrap();
+        conn.execute(
+            "INSERT INTO calls (account_id, call_id, chat_id, outgoing, answered, ended, at)
+             VALUES (?1,?2,?3,?4,?5,?6,?7)
+             ON CONFLICT(account_id, call_id) DO UPDATE SET
+                answered=MAX(answered, excluded.answered),
+                ended=MAX(ended, excluded.ended),
+                at=MAX(at, excluded.at)",
+            params![
+                account,
+                call_id,
+                chat_id,
+                outgoing as i32,
+                answered as i32,
+                ended as i32,
+                at
+            ],
+        )?;
+        Ok(())
+    }
+
+    pub fn calls(&self, account: &str, limit: usize) -> Result<Vec<CallEntry>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT account_id, chat_id, call_id, outgoing, answered, ended, at
+             FROM calls WHERE account_id=?1 ORDER BY at DESC LIMIT ?2",
+        )?;
+        let rows = stmt.query_map(params![account, limit as i64], |row| {
+            Ok(CallEntry {
+                account: AccountId(row.get(0)?),
+                chat_id: row.get(1)?,
+                call_id: row.get(2)?,
+                outgoing: row.get::<_, i32>(3)? != 0,
+                answered: row.get::<_, i32>(4)? != 0,
+                ended: row.get::<_, i32>(5)? != 0,
+                at: row.get(6)?,
+            })
+        })?;
+        let mut out = Vec::new();
+        for row in rows {
+            out.push(row?);
         }
         Ok(out)
     }
@@ -1408,6 +1525,19 @@ CREATE TABLE IF NOT EXISTS avatars (
     path       TEXT NOT NULL,
     PRIMARY KEY (account_id, jid)
 );
+
+-- Calls tab. One row per call id, updated as the call changes state.
+CREATE TABLE IF NOT EXISTS calls (
+    account_id TEXT NOT NULL,
+    call_id    TEXT NOT NULL,
+    chat_id    TEXT NOT NULL,
+    outgoing   INTEGER NOT NULL DEFAULT 0,
+    answered   INTEGER NOT NULL DEFAULT 0,
+    ended      INTEGER NOT NULL DEFAULT 0,
+    at         INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (account_id, call_id)
+);
+CREATE INDEX IF NOT EXISTS calls_by_time ON calls(account_id, at DESC);
 "#;
 
 #[cfg(test)]

@@ -93,6 +93,22 @@ pub struct Chat {
     pub target: String,
 }
 
+/// One row in the Calls tab. Rows are created by the first call event and
+/// updated as the call rings, connects and ends.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct CallEntry {
+    pub account: AccountId,
+    pub chat_id: String,
+    pub call_id: String,
+    /// We dialed (outgoing) rather than answered a ring.
+    pub outgoing: bool,
+    /// Media connected at least once.
+    pub answered: bool,
+    pub ended: bool,
+    /// Unix seconds of the last state change.
+    pub at: i64,
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Message {
     pub id: String,

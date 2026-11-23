@@ -74,6 +74,23 @@ inbox gabungan tetap terbaca sebagai satu aplikasi.
   pada tampilan layanan ikut palet yang sama (panel, hover, baris terpilih),
   jadi list + percakapan terbaca sebagai satu jendela web; inbox bersama dan
   Settings tetap satu bahasa desain.
+- WhatsApp Web: rail kedua 64 px di dalam view layanan (Calls, Status, Channels,
+  Communities, Business, Profile, Settings) di atas rail global 76 px. Ke-66
+  glyph di-capture dari klien web sebagai mask putih di `assets/wa/`, lalu
+  diwarnai saat paint. Sheet Media (tab Media/Dokumen/Tautan, pencarian) dan
+  dialog Advertise memakai backdrop gelap + klik-luar untuk menutup.
+- Telegram Web A: kolom kiri 406 px berisi kartu mengambang 374 px (inset 16 px,
+  `#212121`) di atas wallpaper hitam `#0a0a0a`. Drawer 216 px dan submenu
+  **More** adalah kartu terpisah di kanan drawer (Night Mode, UI Features,
+  Telegram Features, Report a Bug, Switch to K Version, Install App + footer
+  versi), bukan baris yang memanjangkan drawer. Ke-76 glyph berasal dari font
+  ikon web resmi (`icons-BkPSW-Eu.woff2`) sebagai mask di `assets/tg/`.
+- Discord Web A: rail guild 72 px + sidebar DM 300 px + halaman Friends/DM.
+  Palet `theme-darker`: rail/sidebar `#121214`, kolom pesan `#1a1a1e`, search
+  `#222225`, baris terpilih `#2c2c30`, user bar `#202024`, blurple `#5865f2`.
+  Ke-14 glyph di-capture dari DOM (`assets/dc/`), mic/headphones digambar sebagai
+  vektor. Add Server/Discover/Nitro/Shop/Quests/Add Friend membuka kartu
+  penjelasan jujur karena kanal guild & fitur akun di luar cakupan adapter DM.
 - Foto profil chat diambil lewat `Adapter::load_avatar` untuk chat yang tampil
   di daftar dan untuk chat yang dibuka, sekali per sesi. Sebelumnya hanya
   pesan live dan 12 pengirim riwayat yang memicu permintaan, jadi kontak yang
@@ -341,6 +358,9 @@ Hook debug (hanya untuk review visual, tidak memengaruhi build rilis):
 | `UNITED_PROF=1` | sertakan rincian chrome/rail/main di log fps |
 | `UNITED_FLOOD=12000` | replay N baris riwayat lewat jalur batch (uji ANR) |
 | `UNITED_PASTE_TEST=1` | baca gambar clipboard sekali dan catat path hasilnya di log |
+| `UNITED_WA_TAB=media\|advertise\|calls\|status\|...` | buka tab/sheet WhatsApp untuk screenshot |
+| `UNITED_TG=drawer\|more\|contacts\|settings\|profile\|info` | buka pane Telegram Web A untuk screenshot |
+| `UNITED_DC=friends\|dm\|nitro\|shop\|quests\|addfriend\|addserver\|discover` | buka pane Discord + 5 DM contoh bila belum ada akun |
 
 ## Cakupan Rust
 

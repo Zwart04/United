@@ -13,6 +13,6 @@ pub mod store;
 
 pub use adapter::{Adapter, AuthInput};
 pub use events::{CoreEvent, EventBus, ServiceStatus};
-pub use model::{AccountId, Chat, Message, MessageStatus, Service};
+pub use model::{AccountId, CallEntry, Chat, Message, MessageStatus, Service};
 pub use settings::AppSettings;
 pub use store::Store;

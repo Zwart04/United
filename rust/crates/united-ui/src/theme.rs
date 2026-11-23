@@ -124,42 +124,50 @@ pub fn service_palette(mode: Mode, service: Service) -> Palette {
             p.divider = rgb(0xd1d7db);
             p.on_bubble_out = rgb(0x111b21);
         }
+        // Telegram Web A: one #212121 card on a black doodle wallpaper, not
+        // the older desktop client's blue-grey columns.
         (Mode::Dark, Service::Telegram) => {
-            p.chat_bg = rgb(0x0e1621);
-            p.panel = rgb(0x17212b);
-            p.header = rgb(0x17212b);
-            p.hover = rgb(0x202b36);
-            p.selected = rgb(0x2b5278);
-            p.bubble_in = rgb(0x182533);
-            p.bubble_out = rgb(0x2b5278);
-            p.input_bg = rgb(0x17212b);
+            p.chat_bg = rgb(0x0a0a0a);
+            p.panel = rgb(0x212121);
+            p.header = rgb(0x212121);
+            p.hover = rgb(0x2b2b2b);
+            p.selected = rgb(0x2b2b2b);
+            p.bubble_in = rgb(0x212121);
+            p.bubble_out = rgb(0x2b2b2b);
+            p.input_bg = rgb(0x2c2c2c);
             p.accent = rgb(0x3390ec);
-            p.divider = rgb(0x101921);
+            p.divider = rgb(0x2f2f2f);
+            p.text = rgb(0xffffff);
+            p.text_muted = rgb(0xaaaaaa);
         }
         (Mode::Light, Service::Telegram) => {
-            p.chat_bg = rgb(0xe6ebee);
+            p.chat_bg = rgb(0xdfe4e8);
             p.panel = rgb(0xffffff);
             p.header = rgb(0xffffff);
-            p.hover = rgb(0xf4f4f5);
+            p.hover = rgb(0xf1f1f1);
             p.selected = rgb(0xe7f0f7);
             p.bubble_in = rgb(0xffffff);
             p.bubble_out = rgb(0xeeffde);
             p.input_bg = rgb(0xf4f4f5);
             p.accent = rgb(0x3390ec);
-            p.divider = rgb(0xdadce0);
+            p.divider = rgb(0xe4e4e5);
             p.on_bubble_out = rgb(0x111b21);
         }
+        // Discord's darker theme: a near-black rail and sidebar (#121214), the
+        // message column a shade lighter (#1a1a1e), and the user bar raised.
         (Mode::Dark, Service::Discord) => {
-            p.chat_bg = rgb(0x313338);
-            p.panel = rgb(0x2b2d31);
-            p.header = rgb(0x313338);
-            p.hover = rgb(0x35373c);
-            p.selected = rgb(0x404249);
-            p.input_bg = rgb(0x383a40);
+            p.chat_bg = rgb(0x1a1a1e);
+            p.panel = rgb(0x121214);
+            p.header = rgb(0x1a1a1e);
+            p.hover = rgb(0x202024);
+            p.selected = rgb(0x2c2c30);
+            p.input_bg = rgb(0x222225);
             p.bubble_in = rgb(0x2b2d31);
             p.bubble_out = rgb(0x2b2d31);
             p.accent = rgb(0x5865f2);
-            p.divider = rgb(0x26282c);
+            p.divider = rgb(0x26262b);
+            p.text = rgb(0xf2f3f5);
+            p.text_muted = rgb(0x94949c);
         }
         (Mode::Light, Service::Discord) => {
             p.chat_bg = rgb(0xffffff);

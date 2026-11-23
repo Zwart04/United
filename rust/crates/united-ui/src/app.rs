@@ -21,6 +21,216 @@ pub enum View {
     Settings,
 }
 
+/// WhatsApp Web's own rail, shown only while the WhatsApp view is open.
+/// Media and Advertise are sheets; Profile and Settings fill the view.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum WaSection {
+    Chats,
+    Calls,
+    Status,
+    Channels,
+    Communities,
+    Business,
+    Profile,
+    Settings,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum WaModal {
+    Advertise,
+    Media,
+}
+
+/// Telegram Web A's hamburger drawer. Contacts and Settings replace the chat
+/// list column; the rest open a pane in the middle column.
+#[derive(Clone, Copy, PartialEq, Eq, Default)]
+enum TgSection {
+    #[default]
+    Chats,
+    Contacts,
+    Settings,
+    Profile,
+    Info(TgInfo),
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum TgInfo {
+    AddAccount,
+    NewContact,
+    Saved,
+    UiFeatures,
+    Features,
+    Bug,
+    KVersion,
+    Install,
+}
+
+impl TgInfo {
+    fn title(self) -> &'static str {
+        match self {
+            Self::AddAccount => "Add Account",
+            Self::NewContact => "New Contact",
+            Self::Saved => "Saved Messages",
+            Self::UiFeatures => "UI Features",
+            Self::Features => "Telegram Features",
+            Self::Bug => "Report a Bug",
+            Self::KVersion => "Switch to K Version",
+            Self::Install => "Install App",
+        }
+    }
+
+    fn body(self) -> &'static str {
+        match self {
+            Self::AddAccount => {
+                "United keeps one Telegram session per install. Sign out from the rail to link another account."
+            }
+            Self::NewContact => {
+                "Telegram contacts come from the phone's address book. Add the person there and the next sync will carry the name."
+            }
+            Self::Saved => {
+                "Messages you forward here are kept on Telegram's servers. None arrived yet."
+            }
+            Self::UiFeatures => {
+                "Animations, chat backgrounds and the compact layout are part of United's native renderer."
+            }
+            Self::Features => {
+                "Voice chats, folders and secret chats need MTProto calls United does not make yet."
+            }
+            Self::Bug => {
+                "Describe what happened in the United repository's issue tracker. Logs live under the app data folder."
+            }
+            Self::KVersion => {
+                "Web K is the other Telegram client. United talks MTProto directly, so there is no version to switch."
+            }
+            Self::Install => {
+                "United already runs as a desktop app. A desktop entry is created when launch at startup is enabled."
+            }
+        }
+    }
+
+    fn icon(self) -> icons::TgIcon {
+        match self {
+            Self::AddAccount => icons::TgIcon::AddUser,
+            Self::NewContact => icons::TgIcon::AddUser,
+            Self::Saved => icons::TgIcon::SavedMessages,
+            Self::UiFeatures => icons::TgIcon::Animations,
+            Self::Features => icons::TgIcon::Help,
+            Self::Bug => icons::TgIcon::Bug,
+            Self::KVersion => icons::TgIcon::Web,
+            Self::Install => icons::TgIcon::Install,
+        }
+    }
+}
+
+/// Rows in Telegram's settings list. Only the ones with a native counterpart
+/// get a detail page; the rest explain where Telegram keeps the switch.
+#[derive(Clone, Copy, PartialEq, Eq, Default)]
+enum TgSettingsTab {
+    #[default]
+    Account,
+    General,
+    Notifications,
+    Privacy,
+    Data,
+    Devices,
+    Language,
+    Stickers,
+}
+
+/// Discord Web's guild rail and channel sidebar. Guild channels are outside
+/// the adapter's scope, so the rail's buttons explain that instead of lying.
+#[derive(Clone, Copy, PartialEq, Eq, Default)]
+enum DcSection {
+    #[default]
+    Friends,
+    Nitro,
+    Shop,
+    Quests,
+    AddFriend,
+    AddServer,
+    Discover,
+    Chat,
+}
+
+impl DcSection {
+    fn title(self) -> &'static str {
+        match self {
+            Self::Friends | Self::Chat => "Friends",
+            Self::Nitro => "Nitro",
+            Self::Shop => "Shop",
+            Self::Quests => "Quests",
+            Self::AddFriend => "Add Friend",
+            Self::AddServer => "Add a Server",
+            Self::Discover => "Discover",
+        }
+    }
+
+    fn body(self) -> &'static str {
+        match self {
+            Self::Nitro => {
+                "Nitro subscriptions, boosts and premium stickers are sold by Discord. United reads messages with a bot token and cannot buy them."
+            }
+            Self::Shop => {
+                "The Shop sells avatar decorations and profile effects. Those live on Discord's account API, outside United's adapter."
+            }
+            Self::Quests => {
+                "Quests are promotional tasks shown inside Discord's own client. United does not render them."
+            }
+            Self::AddFriend => {
+                "Friend requests need a Discord user session. United's adapter connects with a bot token and only lists conversations that already exist."
+            }
+            Self::AddServer => {
+                "Guild channels are outside the adapter. United lists direct messages; server text and voice stay in Discord."
+            }
+            Self::Discover => {
+                "Server discovery is Discord's directory of public guilds. United does not browse guilds."
+            }
+            _ => "",
+        }
+    }
+
+    fn icon(self) -> icons::DcIcon {
+        match self {
+            Self::Nitro => icons::DcIcon::Nitro,
+            Self::Shop => icons::DcIcon::Shop,
+            Self::Quests => icons::DcIcon::Quests,
+            Self::AddFriend => icons::DcIcon::Friends,
+            Self::AddServer => icons::DcIcon::AddServer,
+            Self::Discover => icons::DcIcon::Discover,
+            _ => icons::DcIcon::Home,
+        }
+    }
+}
+
+impl WaSection {
+    /// Exact WhatsApp rail mark; `None` for the profile, which is a photo.
+    fn wa_icon(self) -> Option<icons::WaIcon> {
+        match self {
+            Self::Chats => Some(icons::WaIcon::Chat),
+            Self::Calls => Some(icons::WaIcon::Call),
+            Self::Status => Some(icons::WaIcon::Status),
+            Self::Channels => Some(icons::WaIcon::Channels),
+            Self::Communities => Some(icons::WaIcon::Communities),
+            Self::Business => Some(icons::WaIcon::Store),
+            Self::Settings => Some(icons::WaIcon::Settings),
+            Self::Profile => None,
+        }
+    }
+
+    fn label(self) -> &'static str {
+        match self {
+            Self::Chats => "Chat",
+            Self::Calls => "Telepon",
+            Self::Status => "Status",
+            Self::Channels => "Saluran",
+            Self::Communities => "Komunitas",
+            Self::Business => "Fitur bisnis",
+            Self::Settings => "Pengaturan",
+            Self::Profile => "Profil",
+        }
+    }
+}
+
 /// Quick-pick emoji for the composer, spread over the faces and gestures
 /// WhatsApp Web shows first. A full searchable set would need a dataset;
 /// this covers the everyday reactions without shipping one.
@@ -61,6 +271,1506 @@ fn cap_cache<K: std::hash::Hash + Eq + Clone, V>(map: &mut HashMap<K, V>, cap: u
     }
 }
 
+/// One tile in WhatsApp's own rail. The open tab swaps in the filled mark
+/// WhatsApp uses, on the same raised square the web client paints.
+fn wa_tile(
+    ui: &mut egui::Ui,
+    textures: &mut icons::WaTextures,
+    icon: icons::WaIcon,
+    selected: bool,
+    p: &Palette,
+    badge: u32,
+) -> egui::Response {
+    let (rect, resp) = ui.allocate_exact_size(Vec2::splat(40.0), Sense::click());
+    if selected {
+        ui.painter()
+            .rect_filled(rect, CornerRadius::same(10), p.selected);
+    } else if resp.hovered() {
+        ui.painter()
+            .rect_filled(rect, CornerRadius::same(10), p.hover);
+    }
+    textures.paint(
+        ui.ctx(),
+        ui.painter(),
+        Rect::from_center_size(rect.center(), Vec2::splat(24.0)),
+        if selected { icon.active() } else { icon },
+        if selected { p.text } else { p.text_muted },
+    );
+    if badge > 0 {
+        let pos = rect.center() + Vec2::new(14.0, -14.0);
+        ui.painter()
+            .circle_filled(pos, 8.0, Color32::from_rgb(0x25, 0xd3, 0x66));
+        ui.painter().text(
+            pos,
+            egui::Align2::CENTER_CENTER,
+            if badge > 99 {
+                "99+".to_string()
+            } else {
+                badge.to_string()
+            },
+            theme::semibold(8.5),
+            Color32::WHITE,
+        );
+    }
+    if resp.hovered() {
+        ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
+    }
+    resp
+}
+
+/// Round chromeless button using WhatsApp's own bitmap mark.
+fn wa_icon_button(
+    ui: &mut egui::Ui,
+    textures: &mut icons::WaTextures,
+    icon: icons::WaIcon,
+    p: &Palette,
+    diameter: f32,
+    icon_size: f32,
+    tint: Color32,
+) -> egui::Response {
+    let (rect, resp) = ui.allocate_exact_size(Vec2::splat(diameter), Sense::click());
+    if resp.hovered() {
+        ui.painter()
+            .circle_filled(rect.center(), diameter / 2.0, p.hover);
+    }
+    textures.paint(
+        ui.ctx(),
+        ui.painter(),
+        Rect::from_center_size(rect.center(), Vec2::splat(icon_size)),
+        icon,
+        tint,
+    );
+    if resp.hovered() {
+        ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
+    }
+    resp
+}
+
+/// WhatsApp's pill search field, icon inside the fill.
+fn wa_search_box(
+    ui: &mut egui::Ui,
+    textures: &mut icons::WaTextures,
+    p: &Palette,
+    query: &mut String,
+    hint: &str,
+) {
+    let width = ui.available_width();
+    let (rect, resp) = ui.allocate_exact_size(Vec2::new(width, 36.0), Sense::click());
+    ui.painter()
+        .rect_filled(rect, CornerRadius::same(8), p.input_bg);
+    textures.paint(
+        ui.ctx(),
+        ui.painter(),
+        Rect::from_center_size(
+            egui::pos2(rect.left() + 18.0, rect.center().y),
+            Vec2::splat(16.0),
+        ),
+        icons::WaIcon::Search,
+        p.text_muted,
+    );
+    let edit_rect = Rect::from_min_max(
+        egui::pos2(rect.left() + 38.0, rect.top() + 7.0),
+        egui::pos2(rect.right() - 12.0, rect.bottom() - 7.0),
+    );
+    let edit = ui.put(
+        edit_rect,
+        egui::TextEdit::singleline(query)
+            .hint_text(RichText::new(hint).color(p.text_muted))
+            .frame(Frame::NONE)
+            .text_color(p.text)
+            .font(theme::regular(13.0)),
+    );
+    if resp.clicked() {
+        edit.request_focus();
+    }
+}
+
+/// Title row of a WhatsApp tab. Actions are painted right to left, exactly as
+/// they sit in the web client; returns which one was pressed.
+fn wa_header(
+    ui: &mut egui::Ui,
+    textures: &mut icons::WaTextures,
+    p: &Palette,
+    title: &str,
+    actions: &[icons::WaIcon],
+) -> Option<usize> {
+    let width = ui.available_width();
+    let (rect, _) = ui.allocate_exact_size(Vec2::new(width, 58.0), Sense::hover());
+    ui.painter().text(
+        egui::pos2(rect.left() + 16.0, rect.center().y),
+        egui::Align2::LEFT_CENTER,
+        title,
+        theme::semibold(20.0),
+        p.text,
+    );
+    let mut right = rect.right() - 16.0;
+    let mut clicked = None;
+    for (index, icon) in actions.iter().enumerate() {
+        let center = egui::pos2(right - 18.0, rect.center().y);
+        let hit = Rect::from_center_size(center, Vec2::splat(40.0));
+        let resp = ui.interact(
+            hit,
+            ui.id().with(("wa-header", title, index)),
+            Sense::click(),
+        );
+        if resp.hovered() {
+            ui.painter().circle_filled(center, 20.0, p.hover);
+            ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
+        }
+        textures.paint(
+            ui.ctx(),
+            ui.painter(),
+            Rect::from_center_size(center, Vec2::splat(24.0)),
+            *icon,
+            p.text_muted,
+        );
+        if resp.clicked() {
+            clicked = Some(index);
+        }
+        right -= 44.0;
+    }
+    clicked
+}
+
+/// Bold section label with an optional green link on the right.
+fn wa_section_row(ui: &mut egui::Ui, p: &Palette, title: &str, action: Option<&str>) -> bool {
+    let width = ui.available_width();
+    let (rect, _) = ui.allocate_exact_size(Vec2::new(width, 34.0), Sense::hover());
+    ui.painter().text(
+        egui::pos2(rect.left() + 16.0, rect.center().y),
+        egui::Align2::LEFT_CENTER,
+        title,
+        theme::semibold(13.0),
+        p.text,
+    );
+    let mut clicked = false;
+    if let Some(action) = action {
+        let galley = ui
+            .painter()
+            .layout_no_wrap(action.to_string(), theme::medium(11.5), p.accent);
+        let action_rect = Rect::from_center_size(
+            egui::pos2(rect.right() - 16.0 - galley.size().x / 2.0, rect.center().y),
+            galley.size() + Vec2::new(12.0, 16.0),
+        );
+        let resp = ui.interact(
+            action_rect,
+            ui.id().with(("wa-section", title)),
+            Sense::click(),
+        );
+        if resp.hovered() {
+            ui.painter()
+                .rect_filled(action_rect, CornerRadius::same(6), p.hover);
+            ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
+        }
+        ui.painter().galley(
+            egui::pos2(
+                rect.right() - 16.0 - galley.size().x,
+                rect.center().y - galley.size().y / 2.0,
+            ),
+            galley,
+            p.accent,
+        );
+        clicked = resp.clicked();
+    }
+    clicked
+}
+
+/// Sentence-case group heading, as used by the business tools list.
+fn wa_group_label(ui: &mut egui::Ui, p: &Palette, title: &str) {
+    ui.add_space(16.0);
+    let width = ui.available_width();
+    let (rect, _) = ui.allocate_exact_size(Vec2::new(width, 26.0), Sense::hover());
+    ui.painter().text(
+        egui::pos2(rect.left() + 16.0, rect.center().y),
+        egui::Align2::LEFT_CENTER,
+        title,
+        theme::semibold(13.0),
+        p.text,
+    );
+    ui.add_space(4.0);
+}
+
+/// Circular avatar with the same fallback palette as the chat list. A ring
+/// colour draws WhatsApp's status circle around it.
+fn wa_avatar(
+    ui: &egui::Ui,
+    p: &Palette,
+    center: egui::Pos2,
+    size: f32,
+    title: &str,
+    picture: Option<&egui::TextureHandle>,
+    ring: Option<Color32>,
+) {
+    let avatar = Rect::from_center_size(center, Vec2::splat(size));
+    if let Some(texture) = picture {
+        egui::Image::new((texture.id(), Vec2::splat(size)))
+            .corner_radius(CornerRadius::same((size / 2.0) as u8))
+            .paint_at(ui, avatar);
+    } else {
+        ui.painter()
+            .circle_filled(center, size / 2.0, format::avatar_color(title));
+        if title.chars().any(|c| c.is_alphabetic()) {
+            ui.painter().text(
+                center,
+                egui::Align2::CENTER_CENTER,
+                format::initials(title),
+                theme::medium(size * 0.34),
+                Color32::WHITE,
+            );
+        } else {
+            icons::paint(
+                ui.painter(),
+                Rect::from_center_size(center, Vec2::splat(size * 0.5)),
+                Icon::Person,
+                Color32::WHITE,
+                1.8,
+            );
+        }
+    }
+    if let Some(color) = ring {
+        ui.painter()
+            .circle_stroke(center, size / 2.0 + 2.5, Stroke::new(2.0, color));
+    }
+    let _ = p;
+}
+
+/// One row of the Calls tab: name and day, then the call direction with the
+/// outgoing/incoming/missed mark WhatsApp uses.
+fn wa_call_row(
+    ui: &mut egui::Ui,
+    textures: &mut icons::WaTextures,
+    p: &Palette,
+    title: &str,
+    time: &str,
+    picture: Option<&egui::TextureHandle>,
+    outgoing: bool,
+    answered: bool,
+) -> egui::Response {
+    let width = ui.available_width();
+    let (rect, resp) = ui.allocate_exact_size(Vec2::new(width, 64.0), Sense::click());
+    if resp.hovered() {
+        ui.painter().rect_filled(rect, CornerRadius::ZERO, p.hover);
+    }
+    let center_y = rect.center().y;
+    wa_avatar(
+        ui,
+        p,
+        egui::pos2(rect.left() + 40.0, center_y),
+        44.0,
+        title,
+        picture,
+        None,
+    );
+    let text_x = rect.left() + 74.0;
+    ui.painter().text(
+        egui::pos2(text_x, rect.top() + 22.0),
+        egui::Align2::LEFT_CENTER,
+        title,
+        theme::regular(14.0),
+        p.text,
+    );
+    ui.painter().text(
+        egui::pos2(rect.right() - 16.0, rect.top() + 22.0),
+        egui::Align2::RIGHT_CENTER,
+        time,
+        theme::regular(11.0),
+        p.text_muted,
+    );
+    let label = if outgoing {
+        "Keluar"
+    } else if answered {
+        "Masuk"
+    } else {
+        "Tak terjawab"
+    };
+    let tint = if !outgoing && !answered {
+        Color32::from_rgb(0xea, 0x55, 0x55)
+    } else {
+        p.text_muted
+    };
+    textures.paint(
+        ui.ctx(),
+        ui.painter(),
+        Rect::from_center_size(
+            egui::pos2(text_x + 7.0, rect.top() + 43.0),
+            Vec2::splat(14.0),
+        ),
+        if outgoing {
+            icons::WaIcon::CallMade
+        } else {
+            icons::WaIcon::CallCallback
+        },
+        tint,
+    );
+    ui.painter().text(
+        egui::pos2(text_x + 18.0, rect.top() + 43.0),
+        egui::Align2::LEFT_CENTER,
+        label,
+        theme::regular(11.5),
+        tint,
+    );
+    ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
+    resp
+}
+
+/// One row of the Channels tab: channel name and clock, sender preview and the
+/// green unread count.
+fn wa_channel_row(
+    ui: &mut egui::Ui,
+    p: &Palette,
+    chat: &Chat,
+    time: &str,
+    picture: Option<&egui::TextureHandle>,
+) -> egui::Response {
+    let width = ui.available_width();
+    let (rect, resp) = ui.allocate_exact_size(Vec2::new(width, 62.0), Sense::click());
+    if resp.hovered() {
+        ui.painter().rect_filled(rect, CornerRadius::ZERO, p.hover);
+    }
+    wa_avatar(
+        ui,
+        p,
+        egui::pos2(rect.left() + 40.0, rect.center().y),
+        44.0,
+        &chat.title,
+        picture,
+        None,
+    );
+    let text_x = rect.left() + 74.0;
+    let time_galley =
+        ui.painter()
+            .layout_no_wrap(time.to_string(), theme::regular(11.0), p.text_muted);
+    let time_w = time_galley.size().x;
+    ui.painter().text(
+        egui::pos2(text_x, rect.top() + 19.0),
+        egui::Align2::LEFT_CENTER,
+        &chat.title,
+        theme::medium(13.5),
+        p.text,
+    );
+    ui.painter().galley(
+        egui::pos2(
+            rect.right() - 16.0 - time_w,
+            rect.top() + 19.0 - time_galley.size().y / 2.0,
+        ),
+        time_galley,
+        p.text_muted,
+    );
+    let preview = if chat.preview_sender.is_empty() {
+        chat.preview.clone()
+    } else {
+        format!("{}: {}", chat.preview_sender, chat.preview)
+    };
+    // Newsletter previews arrive with hard line breaks; a single line with an
+    // ellipsis is what WhatsApp shows.
+    let preview = preview.replace(['\n', '\r'], " ");
+    let badge_w = if chat.unread > 0 { 28.0 } else { 0.0 };
+    let clip_w = (rect.right() - 16.0 - badge_w - text_x).max(0.0);
+    let preview = elide(&preview, clip_w, 11.5);
+    let clip = Rect::from_min_max(
+        egui::pos2(text_x, rect.top() + 30.0),
+        egui::pos2(rect.right() - 16.0 - badge_w, rect.bottom()),
+    );
+    ui.painter().with_clip_rect(clip).text(
+        egui::pos2(text_x, rect.top() + 40.0),
+        egui::Align2::LEFT_CENTER,
+        preview,
+        theme::regular(11.5),
+        p.text_muted,
+    );
+    if chat.unread > 0 {
+        let center = egui::pos2(rect.right() - 22.0, rect.top() + 41.0);
+        ui.painter()
+            .circle_filled(center, 9.0, Color32::from_rgb(0x25, 0xd3, 0x66));
+        ui.painter().text(
+            center,
+            egui::Align2::CENTER_CENTER,
+            if chat.unread > 99 {
+                "99+".to_string()
+            } else {
+                chat.unread.to_string()
+            },
+            theme::semibold(9.0),
+            Color32::WHITE,
+        );
+    }
+    ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
+    resp
+}
+
+/// A centred round action with a caption underneath, used in every detail pane.
+fn wa_action_row(
+    ui: &mut egui::Ui,
+    textures: &mut icons::WaTextures,
+    p: &Palette,
+    actions: &[(icons::WaIcon, &str)],
+) -> Option<usize> {
+    let width = ui.available_width();
+    let (rect, _) = ui.allocate_exact_size(Vec2::new(width, 74.0), Sense::hover());
+    let step = 150.0;
+    let start = rect.center().x - step * (actions.len() as f32 - 1.0) / 2.0;
+    let mut clicked = None;
+    for (index, (icon, label)) in actions.iter().enumerate() {
+        let center = egui::pos2(start + step * index as f32, rect.top() + 24.0);
+        let hit = Rect::from_center_size(center, Vec2::splat(64.0));
+        let resp = ui.interact(hit, ui.id().with(("wa-action", label)), Sense::click());
+        ui.painter().circle_filled(
+            center,
+            24.0,
+            if resp.hovered() { p.selected } else { p.header },
+        );
+        textures.paint(
+            ui.ctx(),
+            ui.painter(),
+            Rect::from_center_size(center, Vec2::splat(22.0)),
+            *icon,
+            p.text,
+        );
+        ui.painter().text(
+            egui::pos2(center.x, rect.top() + 58.0),
+            egui::Align2::CENTER_CENTER,
+            *label,
+            theme::regular(10.5),
+            p.text_muted,
+        );
+        if resp.hovered() {
+            ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
+        }
+        if resp.clicked() {
+            clicked = Some(index);
+        }
+    }
+    clicked
+}
+
+/// End-to-end footer pinned to the bottom of the WhatsApp detail panes.
+fn wa_e2e_footer(ui: &mut egui::Ui, textures: &mut icons::WaTextures, p: &Palette, text: &str) {
+    let rest = ui.available_height();
+    if rest > 60.0 {
+        ui.add_space(rest - 48.0);
+    }
+    let width = ui.available_width();
+    let (rect, _) = ui.allocate_exact_size(Vec2::new(width, 28.0), Sense::hover());
+    let font = theme::regular(11.5);
+    let galley = ui
+        .painter()
+        .layout_no_wrap(text.to_string(), font, p.text_muted);
+    let total = galley.size().x + 22.0;
+    let left = rect.center().x - total / 2.0;
+    textures.paint(
+        ui.ctx(),
+        ui.painter(),
+        Rect::from_center_size(egui::pos2(left + 8.0, rect.center().y), Vec2::splat(17.0)),
+        icons::WaIcon::Lock,
+        p.text_muted,
+    );
+    ui.painter().galley(
+        egui::pos2(left + 20.0, rect.center().y - galley.size().y / 2.0),
+        galley,
+        p.text_muted,
+    );
+}
+
+/// Approximate single-line truncation, matching the chat list's own helper.
+fn elide(text: &str, width: f32, size: f32) -> String {
+    if width <= 0.0 {
+        return String::new();
+    }
+    let max_chars = (width / (size * 0.52)) as usize;
+    if text.chars().count() <= max_chars {
+        return text.to_string();
+    }
+    let mut out: String = text.chars().take(max_chars.saturating_sub(1)).collect();
+    out.push('…');
+    out
+}
+
+/// Group an Indonesian number the way WhatsApp prints it.
+fn format_phone(raw: &str) -> String {
+    let digits: String = raw
+        .chars()
+        .filter(|c| c.is_ascii_digit() || *c == '+')
+        .collect();
+    if let Some(rest) = digits.strip_prefix("+62") {
+        let rest = rest.trim_start_matches('0');
+        if rest.len() >= 10 {
+            return format!("+62 {}-{}-{}", &rest[..3], &rest[3..7], &rest[7..]);
+        }
+    }
+    raw.to_string()
+}
+
+/// Menu row used by the business, settings and profile lists. A green dot
+/// mirrors WhatsApp's "new" marker.
+fn wa_menu_row(
+    ui: &mut egui::Ui,
+    textures: &mut icons::WaTextures,
+    p: &Palette,
+    icon: icons::WaIcon,
+    title: &str,
+    detail: &str,
+    dot: bool,
+) -> bool {
+    let width = ui.available_width();
+    let (rect, resp) = ui.allocate_exact_size(Vec2::new(width, 56.0), Sense::click());
+    if resp.hovered() {
+        ui.painter().rect_filled(rect, CornerRadius::ZERO, p.hover);
+    }
+    textures.paint(
+        ui.ctx(),
+        ui.painter(),
+        Rect::from_center_size(
+            egui::pos2(rect.left() + 32.0, rect.center().y),
+            Vec2::splat(22.0),
+        ),
+        icon,
+        p.text_muted,
+    );
+    ui.painter().text(
+        rect.left_top() + Vec2::new(56.0, 12.0),
+        egui::Align2::LEFT_TOP,
+        title,
+        theme::regular(13.5),
+        p.text,
+    );
+    ui.painter().text(
+        rect.left_top() + Vec2::new(56.0, 31.0),
+        egui::Align2::LEFT_TOP,
+        detail,
+        theme::regular(11.0),
+        p.text_muted,
+    );
+    if dot {
+        ui.painter().circle_filled(
+            egui::pos2(rect.right() - 20.0, rect.center().y),
+            4.0,
+            Color32::from_rgb(0x25, 0xd3, 0x66),
+        );
+    }
+    if resp.hovered() {
+        ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
+    }
+    resp.clicked()
+}
+
+/// Small green text button, the shape WhatsApp uses for Edit and Add links.
+fn wa_text_link(ui: &mut egui::Ui, p: &Palette, label: &str) -> bool {
+    let galley = ui
+        .painter()
+        .layout_no_wrap(label.to_string(), theme::medium(12.0), p.accent);
+    let (rect, resp) =
+        ui.allocate_exact_size(galley.size() + Vec2::new(16.0, 12.0), Sense::click());
+    if resp.hovered() {
+        ui.painter()
+            .rect_filled(rect, CornerRadius::same(6), p.hover);
+        ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
+    }
+    ui.painter()
+        .galley(rect.center() - galley.size() / 2.0, galley, p.accent);
+    resp.clicked()
+}
+
+/// Profile information row: icon, tiny caption and the value.
+fn wa_info_row(
+    ui: &mut egui::Ui,
+    textures: &mut icons::WaTextures,
+    p: &Palette,
+    icon: icons::WaIcon,
+    label: &str,
+    value: &str,
+) {
+    let width = ui.available_width();
+    let (rect, _) = ui.allocate_exact_size(Vec2::new(width, 46.0), Sense::hover());
+    textures.paint(
+        ui.ctx(),
+        ui.painter(),
+        Rect::from_center_size(
+            egui::pos2(rect.left() + 11.0, rect.center().y),
+            Vec2::splat(20.0),
+        ),
+        icon,
+        p.text_muted,
+    );
+    ui.painter().text(
+        rect.left_top() + Vec2::new(34.0, 5.0),
+        egui::Align2::LEFT_TOP,
+        label,
+        theme::regular(10.0),
+        p.text_muted,
+    );
+    ui.painter().text(
+        rect.left_top() + Vec2::new(34.0, 20.0),
+        egui::Align2::LEFT_TOP,
+        value,
+        theme::regular(13.0),
+        p.text,
+    );
+}
+
+/// Rounded profile input: leading icon and muted placeholder inside the border.
+fn wa_input_row(
+    ui: &mut egui::Ui,
+    textures: &mut icons::WaTextures,
+    p: &Palette,
+    icon: icons::WaIcon,
+    placeholder: &str,
+) {
+    let width = ui.available_width();
+    let (rect, _) = ui.allocate_exact_size(Vec2::new(width, 46.0), Sense::hover());
+    let field = Rect::from_min_max(
+        egui::pos2(rect.left() + 34.0, rect.top() + 4.0),
+        egui::pos2(rect.right(), rect.bottom() - 4.0),
+    );
+    textures.paint(
+        ui.ctx(),
+        ui.painter(),
+        Rect::from_center_size(
+            egui::pos2(rect.left() + 11.0, field.center().y),
+            Vec2::splat(20.0),
+        ),
+        icon,
+        p.text_muted,
+    );
+    ui.painter().rect_stroke(
+        field,
+        CornerRadius::same(8),
+        Stroke::new(1.0, p.divider),
+        egui::StrokeKind::Inside,
+    );
+    ui.painter().text(
+        egui::pos2(field.left() + 14.0, field.center().y),
+        egui::Align2::LEFT_CENTER,
+        placeholder,
+        theme::regular(12.5),
+        p.text_muted,
+    );
+}
+
+/// Caption above a rounded selector field, like "Area dalam cakupan".
+fn wa_selector_row(
+    ui: &mut egui::Ui,
+    textures: &mut icons::WaTextures,
+    p: &Palette,
+    label: &str,
+    value: &str,
+) {
+    let width = ui.available_width();
+    let (caption, _) = ui.allocate_exact_size(Vec2::new(width, 22.0), Sense::hover());
+    ui.painter().text(
+        egui::pos2(caption.left() + 34.0, caption.center().y),
+        egui::Align2::LEFT_CENTER,
+        label,
+        theme::regular(10.0),
+        p.text_muted,
+    );
+    let (rect, _) = ui.allocate_exact_size(Vec2::new(width, 40.0), Sense::hover());
+    let field = Rect::from_min_max(
+        egui::pos2(rect.left() + 34.0, rect.top()),
+        egui::pos2(rect.right(), rect.bottom() - 2.0),
+    );
+    ui.painter().rect_stroke(
+        field,
+        CornerRadius::same(8),
+        Stroke::new(1.0, p.divider),
+        egui::StrokeKind::Inside,
+    );
+    ui.painter().text(
+        egui::pos2(field.left() + 14.0, field.center().y),
+        egui::Align2::LEFT_CENTER,
+        value,
+        theme::regular(12.5),
+        p.text,
+    );
+    textures.paint(
+        ui.ctx(),
+        ui.painter(),
+        Rect::from_center_size(
+            egui::pos2(field.right() - 16.0, field.center().y),
+            Vec2::splat(18.0),
+        ),
+        icons::WaIcon::Dropdown,
+        p.text_muted,
+    );
+}
+
+/// Menu row with a switch on the right. Returns true when the value changed.
+fn wa_toggle_row(
+    ui: &mut egui::Ui,
+    textures: &mut icons::WaTextures,
+    p: &Palette,
+    icon: icons::WaIcon,
+    title: &str,
+    detail: &str,
+    value: &mut bool,
+) -> bool {
+    let width = ui.available_width();
+    let (rect, resp) = ui.allocate_exact_size(Vec2::new(width, 58.0), Sense::click());
+    if resp.hovered() {
+        ui.painter().rect_filled(rect, CornerRadius::ZERO, p.hover);
+    }
+    textures.paint(
+        ui.ctx(),
+        ui.painter(),
+        Rect::from_center_size(
+            egui::pos2(rect.left() + 32.0, rect.center().y),
+            Vec2::splat(22.0),
+        ),
+        icon,
+        p.text_muted,
+    );
+    ui.painter().text(
+        rect.left_top() + Vec2::new(56.0, 13.0),
+        egui::Align2::LEFT_TOP,
+        title,
+        theme::regular(13.5),
+        p.text,
+    );
+    ui.painter().text(
+        rect.left_top() + Vec2::new(56.0, 32.0),
+        egui::Align2::LEFT_TOP,
+        detail,
+        theme::regular(11.0),
+        p.text_muted,
+    );
+    let track = Rect::from_center_size(
+        egui::pos2(rect.right() - 40.0, rect.center().y),
+        Vec2::new(36.0, 20.0),
+    );
+    ui.painter().rect_filled(
+        track,
+        CornerRadius::same(10),
+        if *value { p.accent } else { p.divider },
+    );
+    ui.painter().circle_filled(
+        egui::pos2(
+            if *value {
+                track.right() - 10.0
+            } else {
+                track.left() + 10.0
+            },
+            track.center().y,
+        ),
+        8.0,
+        Color32::WHITE,
+    );
+    if resp.hovered() {
+        ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
+    }
+    if resp.clicked() {
+        *value = !*value;
+        return true;
+    }
+    false
+}
+
+/// Centred WhatsApp detail pane: illustration card, optional round actions and
+/// the end-to-end footer. Returns the pressed action index.
+fn wa_detail_card(
+    ui: &mut egui::Ui,
+    textures: &mut icons::WaTextures,
+    p: &Palette,
+    icon: icons::WaIcon,
+    title: &str,
+    body: &str,
+    actions: &[(icons::WaIcon, &str)],
+    footer: Option<&str>,
+) -> Option<usize> {
+    let mut pressed = None;
+    ui.add_space(100.0);
+    ui.vertical_centered(|ui| {
+        Frame::new()
+            .fill(p.header)
+            .corner_radius(12)
+            .inner_margin(Margin::symmetric(20, 18))
+            .show(ui, |ui| {
+                ui.set_width(240.0);
+                ui.vertical_centered(|ui| {
+                    let (rect, _) = ui.allocate_exact_size(Vec2::new(132.0, 88.0), Sense::hover());
+                    if icon == icons::WaIcon::LaptopCalling {
+                        textures.paint(ui.ctx(), ui.painter(), rect, icon, Color32::WHITE);
+                    } else {
+                        textures.paint(
+                            ui.ctx(),
+                            ui.painter(),
+                            Rect::from_center_size(rect.center(), Vec2::splat(56.0)),
+                            icon,
+                            p.text_muted.gamma_multiply(0.55),
+                        );
+                    }
+                    ui.add_space(12.0);
+                    ui.label(
+                        RichText::new(title)
+                            .font(theme::semibold(16.0))
+                            .color(p.text),
+                    );
+                    ui.add_space(6.0);
+                    ui.label(
+                        RichText::new(body)
+                            .font(theme::regular(11.5))
+                            .color(p.text_muted),
+                    );
+                });
+            });
+        ui.add_space(20.0);
+    });
+    if !actions.is_empty() {
+        pressed = wa_action_row(ui, textures, p, actions);
+    }
+    if let Some(footer) = footer {
+        wa_e2e_footer(ui, textures, p, footer);
+    }
+    pressed
+}
+
+/// Centred icon + explanation for a tab that has no rows yet.
+fn wa_empty(ui: &mut egui::Ui, p: &Palette, icon: Icon, title: &str, body: &str) {
+    ui.add_space(54.0);
+    ui.vertical_centered(|ui| {
+        let (rect, _) = ui.allocate_exact_size(Vec2::splat(40.0), Sense::hover());
+        icons::paint(
+            ui.painter(),
+            Rect::from_center_size(rect.center(), Vec2::splat(34.0)),
+            icon,
+            p.text_muted.gamma_multiply(0.6),
+            1.5,
+        );
+        ui.add_space(10.0);
+        ui.label(RichText::new(title).font(theme::medium(13.5)).color(p.text));
+        ui.add_space(2.0);
+        ui.label(
+            RichText::new(body)
+                .font(theme::regular(11.5))
+                .color(p.text_muted),
+        );
+    });
+}
+
+/// One row in the Media sheet's Links tab.
+fn wa_link_row(ui: &mut egui::Ui, p: &Palette, title: &str, body: &str, at: i64) -> bool {
+    let width = ui.available_width();
+    let (rect, resp) = ui.allocate_exact_size(Vec2::new(width, 58.0), Sense::click());
+    if resp.hovered() {
+        ui.painter().rect_filled(rect, CornerRadius::ZERO, p.hover);
+    }
+    ui.painter().text(
+        rect.left_top() + Vec2::new(16.0, 10.0),
+        egui::Align2::LEFT_TOP,
+        title,
+        theme::medium(12.5),
+        p.text,
+    );
+    ui.painter().text(
+        rect.left_top() + Vec2::new(16.0, 30.0),
+        egui::Align2::LEFT_TOP,
+        body.chars().take(90).collect::<String>(),
+        theme::regular(11.5),
+        p.accent,
+    );
+    ui.painter().text(
+        rect.right_top() + Vec2::new(-16.0, 10.0),
+        egui::Align2::RIGHT_TOP,
+        format::chat_time(at),
+        theme::regular(10.5),
+        p.text_muted,
+    );
+    if resp.hovered() {
+        ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
+    }
+    resp.clicked()
+}
+
+/// First http(s) URL in a message body, trimmed of trailing punctuation.
+fn first_url(body: &str) -> Option<String> {
+    let start = body.find("http://").or_else(|| body.find("https://"))?;
+    let rest = &body[start..];
+    let end = rest.find(|c: char| c.is_whitespace()).unwrap_or(rest.len());
+    Some(
+        rest[..end]
+            .trim_end_matches(['.', ',', ')', ']'])
+            .to_string(),
+    )
+}
+
+// ------------------------------------------------------------------ Telegram
+
+/// Round chromeless button with one of Telegram's own marks.
+fn tg_button(
+    ui: &mut egui::Ui,
+    textures: &mut icons::TgTextures,
+    icon: icons::TgIcon,
+    diameter: f32,
+    icon_size: f32,
+    tint: Color32,
+) -> egui::Response {
+    let (rect, resp) = ui.allocate_exact_size(Vec2::splat(diameter), Sense::click());
+    if resp.hovered() {
+        ui.painter()
+            .circle_filled(rect.center(), diameter / 2.0, Color32::from_white_alpha(14));
+    }
+    textures.paint(
+        ui.ctx(),
+        ui.painter(),
+        Rect::from_center_size(rect.center(), Vec2::splat(icon_size)),
+        icon,
+        tint,
+    );
+    if resp.hovered() {
+        ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
+    }
+    resp
+}
+
+/// Telegram Web A's pill search field.
+fn tg_search_box(
+    ui: &mut egui::Ui,
+    textures: &mut icons::TgTextures,
+    p: &Palette,
+    text: &mut String,
+    hint: &str,
+    width: f32,
+) -> egui::Response {
+    // One allocated pill, with the field placed inside it. A nested Frame let
+    // the field's desired width push the header past the card's edge.
+    let (rect, resp) = ui.allocate_exact_size(Vec2::new(width, 40.0), Sense::click());
+    ui.painter()
+        .rect_filled(rect, CornerRadius::same(20), p.input_bg);
+    textures.paint(
+        ui.ctx(),
+        ui.painter(),
+        Rect::from_center_size(
+            egui::pos2(rect.left() + 24.0, rect.center().y),
+            Vec2::splat(20.0),
+        ),
+        icons::TgIcon::Search,
+        p.text_muted,
+    );
+    let edit = Rect::from_min_max(
+        egui::pos2(rect.left() + 42.0, rect.top() + 8.0),
+        egui::pos2(rect.right() - 14.0, rect.bottom() - 8.0),
+    );
+    let field = ui.put(
+        edit,
+        egui::TextEdit::singleline(text)
+            .hint_text(
+                RichText::new(hint)
+                    .color(p.text_muted)
+                    .font(theme::regular(14.0)),
+            )
+            .frame(egui::Frame::NONE)
+            .desired_width(edit.width())
+            .font(theme::regular(14.0))
+            .text_color(p.text),
+    );
+    if resp.clicked() {
+        field.request_focus();
+    }
+    resp
+}
+
+/// One row in Telegram's hamburger drawer.
+fn tg_menu_item(
+    ui: &mut egui::Ui,
+    textures: &mut icons::TgTextures,
+    p: &Palette,
+    icon: icons::TgIcon,
+    label: &str,
+    selected: bool,
+) -> bool {
+    let width = ui.available_width();
+    let (rect, resp) = ui.allocate_exact_size(Vec2::new(width, 32.0), Sense::click());
+    if resp.hovered() {
+        ui.painter()
+            .rect_filled(rect, CornerRadius::same(8), p.hover);
+    }
+    textures.paint(
+        ui.ctx(),
+        ui.painter(),
+        Rect::from_center_size(
+            egui::pos2(rect.left() + 18.0, rect.center().y),
+            Vec2::splat(20.0),
+        ),
+        icon,
+        if selected { p.accent } else { p.text_muted },
+    );
+    ui.painter().text(
+        egui::pos2(rect.left() + 38.0, rect.center().y),
+        egui::Align2::LEFT_CENTER,
+        label,
+        theme::regular(14.0),
+        p.text,
+    );
+    if resp.hovered() {
+        ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
+    }
+    resp.clicked()
+}
+
+/// Drawer row with a switch on the right, for Night Mode.
+fn tg_menu_toggle(
+    ui: &mut egui::Ui,
+    textures: &mut icons::TgTextures,
+    p: &Palette,
+    icon: icons::TgIcon,
+    label: &str,
+    value: bool,
+) -> bool {
+    let width = ui.available_width();
+    let (rect, resp) = ui.allocate_exact_size(Vec2::new(width, 32.0), Sense::click());
+    if resp.hovered() {
+        ui.painter()
+            .rect_filled(rect, CornerRadius::same(8), p.hover);
+    }
+    textures.paint(
+        ui.ctx(),
+        ui.painter(),
+        Rect::from_center_size(
+            egui::pos2(rect.left() + 18.0, rect.center().y),
+            Vec2::splat(20.0),
+        ),
+        icon,
+        p.text_muted,
+    );
+    ui.painter().text(
+        egui::pos2(rect.left() + 38.0, rect.center().y),
+        egui::Align2::LEFT_CENTER,
+        label,
+        theme::regular(14.0),
+        p.text,
+    );
+    let track = Rect::from_center_size(
+        egui::pos2(rect.right() - 22.0, rect.center().y),
+        Vec2::new(34.0, 20.0),
+    );
+    ui.painter().rect_filled(
+        track,
+        CornerRadius::same(10),
+        if value { p.accent } else { p.divider },
+    );
+    ui.painter().circle_filled(
+        egui::pos2(
+            if value {
+                track.right() - 10.0
+            } else {
+                track.left() + 10.0
+            },
+            track.center().y,
+        ),
+        7.0,
+        Color32::WHITE,
+    );
+    if resp.hovered() {
+        ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
+    }
+    resp.clicked()
+}
+
+/// Coloured round icon tile and two lines, the settings list's row.
+fn tg_settings_row(
+    ui: &mut egui::Ui,
+    textures: &mut icons::TgTextures,
+    p: &Palette,
+    icon: icons::TgIcon,
+    color: Color32,
+    title: &str,
+    subtitle: &str,
+    selected: bool,
+) -> bool {
+    let width = ui.available_width();
+    let (rect, resp) = ui.allocate_exact_size(Vec2::new(width, 58.0), Sense::click());
+    if selected || resp.hovered() {
+        ui.painter().rect_filled(
+            rect,
+            CornerRadius::same(12),
+            if selected { p.selected } else { p.hover },
+        );
+    }
+    let tile = Rect::from_center_size(
+        egui::pos2(rect.left() + 30.0, rect.center().y),
+        Vec2::splat(38.0),
+    );
+    ui.painter().circle_filled(tile.center(), 19.0, color);
+    textures.paint(
+        ui.ctx(),
+        ui.painter(),
+        Rect::from_center_size(tile.center(), Vec2::splat(22.0)),
+        icon,
+        Color32::WHITE,
+    );
+    ui.painter().text(
+        rect.left_top() + Vec2::new(56.0, 11.0),
+        egui::Align2::LEFT_TOP,
+        title,
+        theme::medium(14.0),
+        p.text,
+    );
+    ui.painter().text(
+        rect.left_top() + Vec2::new(56.0, 31.0),
+        egui::Align2::LEFT_TOP,
+        subtitle,
+        theme::regular(12.0),
+        p.text_muted,
+    );
+    textures.paint(
+        ui.ctx(),
+        ui.painter(),
+        Rect::from_center_size(
+            egui::pos2(rect.right() - 16.0, rect.center().y),
+            Vec2::splat(16.0),
+        ),
+        icons::TgIcon::ArrowRight,
+        p.text_muted.gamma_multiply(0.7),
+    );
+    if resp.hovered() {
+        ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
+    }
+    resp.clicked()
+}
+
+/// Label/value line inside a Telegram settings detail card.
+fn tg_fact_row(ui: &mut egui::Ui, p: &Palette, label: &str, value: &str) {
+    let width = ui.available_width();
+    let (rect, _) = ui.allocate_exact_size(Vec2::new(width, 46.0), Sense::hover());
+    ui.painter().text(
+        rect.left_top() + Vec2::new(0.0, 7.0),
+        egui::Align2::LEFT_TOP,
+        label,
+        theme::regular(11.0),
+        p.text_muted,
+    );
+    ui.painter().text(
+        rect.left_top() + Vec2::new(0.0, 23.0),
+        egui::Align2::LEFT_TOP,
+        value,
+        theme::regular(14.0),
+        p.text,
+    );
+}
+
+/// Centred card used by Telegram's profile, contact and info panes.
+fn tg_detail_frame(ui: &mut egui::Ui, p: &Palette, content: impl FnOnce(&mut egui::Ui)) {
+    ScrollArea::vertical()
+        .id_salt("tg-detail")
+        .auto_shrink([false, false])
+        .show(ui, |ui| {
+            ui.add_space(40.0);
+            ui.vertical_centered(|ui| {
+                Frame::new()
+                    .fill(p.header)
+                    .corner_radius(14)
+                    .inner_margin(Margin::symmetric(24, 22))
+                    .show(ui, |ui| {
+                        ui.set_width(320.0_f32.min(ui.available_width()));
+                        content(ui);
+                    });
+            });
+        });
+}
+
+fn tg_placeholder(ui: &mut egui::Ui, p: &Palette, text: &str) {
+    ui.add_space(120.0);
+    ui.vertical_centered(|ui| {
+        ui.label(
+            RichText::new(text)
+                .font(theme::regular(13.0))
+                .color(p.text_muted),
+        );
+    });
+}
+
+/// Telegram's blue pill button.
+fn tg_pill_button(ui: &mut egui::Ui, p: &Palette, label: &str) -> bool {
+    let (rect, resp) = ui.allocate_exact_size(Vec2::new(148.0, 36.0), Sense::click());
+    ui.painter()
+        .rect_filled(rect, CornerRadius::same(18), p.accent);
+    ui.painter().text(
+        rect.center(),
+        egui::Align2::CENTER_CENTER,
+        label,
+        theme::medium(13.0),
+        Color32::WHITE,
+    );
+    if resp.hovered() {
+        ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
+    }
+    resp.clicked()
+}
+
+/// Dim + click-away backdrop behind a modal sheet. Returns true on click.
+fn modal_backdrop(ctx: &egui::Context) -> bool {
+    let screen = ctx.content_rect();
+    let mut clicked = false;
+    egui::Area::new(egui::Id::new("wa-modal-dim"))
+        .order(egui::Order::Middle)
+        .fixed_pos(screen.min)
+        .show(ctx, |ui| {
+            let (rect, resp) = ui.allocate_exact_size(screen.size(), Sense::click());
+            ui.painter()
+                .rect_filled(rect, 0.0, Color32::from_black_alpha(120));
+            clicked = resp.clicked();
+        });
+    clicked
+}
+
+// ------------------------------------------------------------------- Discord
+
+/// Sample DMs for `UNITED_DC` screenshots, where no bot token is linked.
+fn dc_demo_chats() -> Vec<Chat> {
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs() as i64)
+        .unwrap_or(0);
+    [
+        ("1", "Ryan", "heyheyryan", 0u32),
+        ("2", "Rythm", "rythm.fm", 0),
+        ("3", "Bewokz", "jote", 2),
+        ("4", "Jockie Music", "m!help", 0),
+        ("5", "sy4mei", "Online", 0),
+    ]
+    .into_iter()
+    .enumerate()
+    .map(|(n, (id, title, preview, unread))| Chat {
+        id: id.to_string(),
+        account: united_core::model::AccountId::new(Service::Discord, "me"),
+        service: Service::Discord,
+        title: title.to_string(),
+        is_group: false,
+        avatar: None,
+        unread,
+        muted: false,
+        last_at: now - n as i64 * 600,
+        preview: preview.to_string(),
+        preview_sender: String::new(),
+        target: id.to_string(),
+    })
+    .collect()
+}
+
+/// 48px guild tile with Discord's white pill indicator.
+fn dc_guild_tile(
+    ui: &mut egui::Ui,
+    textures: &mut icons::DcTextures,
+    p: &Palette,
+    icon: icons::DcIcon,
+    selected: bool,
+) -> egui::Response {
+    let (rect, resp) = ui.allocate_exact_size(Vec2::splat(48.0), Sense::click());
+    if selected {
+        // The indicator hangs off the rail's left edge, so it is drawn from
+        // the tile's position rather than from the allocated row.
+        let pill = Rect::from_center_size(
+            egui::pos2(rect.left() - 12.0, rect.center().y),
+            Vec2::new(8.0, 32.0),
+        );
+        ui.painter()
+            .rect_filled(pill, CornerRadius::same(4), Color32::WHITE);
+        ui.painter()
+            .rect_filled(rect, CornerRadius::same(16), p.accent);
+    } else {
+        ui.painter()
+            .rect_filled(rect, CornerRadius::same(16), p.hover);
+    }
+    textures.paint(
+        ui.ctx(),
+        ui.painter(),
+        Rect::from_center_size(rect.center(), Vec2::splat(30.0)),
+        icon,
+        if selected {
+            Color32::WHITE
+        } else {
+            p.text_muted
+        },
+    );
+    if resp.hovered() {
+        ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
+    }
+    resp
+}
+
+/// One nav row in Discord's DM sidebar (Friends, Nitro, Shop, Quests).
+fn dc_nav_row(
+    ui: &mut egui::Ui,
+    textures: &mut icons::DcTextures,
+    p: &Palette,
+    icon: icons::DcIcon,
+    label: &str,
+    selected: bool,
+) -> bool {
+    let width = ui.available_width();
+    let (rect, resp) = ui.allocate_exact_size(Vec2::new(width, 38.0), Sense::click());
+    if selected {
+        ui.painter()
+            .rect_filled(rect, CornerRadius::same(8), p.selected);
+    } else if resp.hovered() {
+        ui.painter()
+            .rect_filled(rect, CornerRadius::same(8), p.hover);
+    }
+    textures.paint(
+        ui.ctx(),
+        ui.painter(),
+        Rect::from_center_size(
+            egui::pos2(rect.left() + 18.0, rect.center().y),
+            Vec2::splat(20.0),
+        ),
+        icon,
+        if selected { p.text } else { p.text_muted },
+    );
+    ui.painter().text(
+        egui::pos2(rect.left() + 38.0, rect.center().y),
+        egui::Align2::LEFT_CENTER,
+        label,
+        theme::medium(15.5),
+        if selected { p.text } else { p.text_muted },
+    );
+    if resp.hovered() {
+        ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
+    }
+    resp.clicked()
+}
+
+/// Small round button for the user bar, with a slash when toggled off.
+fn dc_voice_button(ui: &mut egui::Ui, icon: Icon, p: &Palette, active: bool) -> egui::Response {
+    let (rect, resp) = ui.allocate_exact_size(Vec2::splat(32.0), Sense::click());
+    if resp.hovered() {
+        ui.painter()
+            .rect_filled(rect, CornerRadius::same(6), p.selected);
+    }
+    icons::paint(
+        ui.painter(),
+        Rect::from_center_size(rect.center(), Vec2::splat(20.0)),
+        icon,
+        if active { p.text } else { p.text_muted },
+        1.8,
+    );
+    if !active {
+        ui.painter().line_segment(
+            [
+                rect.center() + Vec2::new(-8.0, 8.0),
+                rect.center() + Vec2::new(8.0, -8.0),
+            ],
+            Stroke::new(2.0, Color32::from_rgb(0xda, 0x37, 0x3c)),
+        );
+    }
+    if resp.hovered() {
+        ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
+    }
+    resp
+}
+
+/// Centred explanatory card for the rail's non-DM destinations.
+fn dc_info_page(
+    ui: &mut egui::Ui,
+    textures: &mut icons::DcTextures,
+    p: &Palette,
+    section: DcSection,
+) -> bool {
+    let mut back = false;
+    ui.add_space(80.0);
+    ui.vertical_centered(|ui| {
+        Frame::new()
+            .fill(p.hover)
+            .corner_radius(12)
+            .inner_margin(Margin::symmetric(28, 26))
+            .show(ui, |ui| {
+                ui.set_width(340.0_f32.min(ui.available_width()));
+                ui.vertical_centered(|ui| {
+                    let (rect, _) = ui.allocate_exact_size(Vec2::splat(64.0), Sense::hover());
+                    textures.paint(
+                        ui.ctx(),
+                        ui.painter(),
+                        Rect::from_center_size(rect.center(), Vec2::splat(44.0)),
+                        section.icon(),
+                        p.text,
+                    );
+                    ui.add_space(12.0);
+                    ui.label(
+                        RichText::new(section.title())
+                            .font(theme::semibold(18.0))
+                            .color(p.text),
+                    );
+                    ui.add_space(8.0);
+                    ui.label(
+                        RichText::new(section.body())
+                            .font(theme::regular(13.0))
+                            .color(p.text_muted),
+                    );
+                    ui.add_space(18.0);
+                    let (rect, resp) =
+                        ui.allocate_exact_size(Vec2::new(180.0, 36.0), Sense::click());
+                    ui.painter()
+                        .rect_filled(rect, CornerRadius::same(8), p.accent);
+                    ui.painter().text(
+                        rect.center(),
+                        egui::Align2::CENTER_CENTER,
+                        "Back to Friends",
+                        theme::medium(13.5),
+                        Color32::WHITE,
+                    );
+                    if resp.hovered() {
+                        ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
+                    }
+                    back = resp.clicked();
+                });
+            });
+    });
+    back
+}
+
+/// Switch row with no leading mark, for settings United really stores.
+fn tg_toggle_row(
+    ui: &mut egui::Ui,
+    p: &Palette,
+    title: &str,
+    detail: &str,
+    value: &mut bool,
+) -> bool {
+    let width = ui.available_width();
+    let (rect, resp) = ui.allocate_exact_size(Vec2::new(width, 58.0), Sense::click());
+    if resp.hovered() {
+        ui.painter()
+            .rect_filled(rect, CornerRadius::same(8), p.hover);
+    }
+    ui.painter().text(
+        rect.left_top() + Vec2::new(2.0, 12.0),
+        egui::Align2::LEFT_TOP,
+        title,
+        theme::regular(14.0),
+        p.text,
+    );
+    ui.painter().text(
+        rect.left_top() + Vec2::new(2.0, 32.0),
+        egui::Align2::LEFT_TOP,
+        detail,
+        theme::regular(11.5),
+        p.text_muted,
+    );
+    let track = Rect::from_center_size(
+        egui::pos2(rect.right() - 20.0, rect.center().y),
+        Vec2::new(36.0, 20.0),
+    );
+    ui.painter().rect_filled(
+        track,
+        CornerRadius::same(10),
+        if *value { p.accent } else { p.divider },
+    );
+    ui.painter().circle_filled(
+        egui::pos2(
+            if *value {
+                track.right() - 10.0
+            } else {
+                track.left() + 10.0
+            },
+            track.center().y,
+        ),
+        7.0,
+        Color32::WHITE,
+    );
+    if resp.clicked() {
+        *value = !*value;
+        return true;
+    }
+    false
+}
+
 /// Voice call painted over the chat, like WhatsApp Web's call screen.
 struct CallUi {
     service: Service,
@@ -87,6 +1797,48 @@ pub struct UnitedApp {
     pub search: String,
     /// Chat-list "Unread" pill, like WhatsApp and Telegram Web.
     unread_only: bool,
+    /// WhatsApp Web's own rail inside the WhatsApp view. Telegram and Discord
+    /// keep the plain chat list.
+    wa_section: WaSection,
+    wa_modal: Option<WaModal>,
+    /// Calls tab rows, loaded when the tab is opened and after each call.
+    wa_calls: Vec<united_core::CallEntry>,
+    /// Channels tab rows, loaded on demand.
+    wa_channels: Vec<Chat>,
+    /// Media sheet contents, loaded when the sheet opens.
+    wa_media: Vec<Message>,
+    /// Messages carrying a URL, for the sheet's Links tab.
+    wa_links: Vec<Message>,
+    /// Media sheet tab: 0 media, 1 documents, 2 links.
+    wa_media_tab: u8,
+    /// Filter for the media sheet's search field.
+    wa_media_query: String,
+    /// Per-tab search text, cleared whenever the tab changes.
+    wa_search: String,
+    /// Which WhatsApp settings row is open, if any.
+    wa_settings_page: Option<&'static str>,
+    /// Dismissed the "Pilih notifikasi Anda" banner.
+    wa_banner_hidden: bool,
+    /// Exact WhatsApp rail bitmaps, decoded once per window.
+    wa_textures: icons::WaTextures,
+    /// Telegram Web A's drawer state and open pane.
+    tg_section: TgSection,
+    tg_settings_tab: TgSettingsTab,
+    tg_drawer: bool,
+    tg_more: bool,
+    /// Address book loaded when Contacts opens, not queried every frame.
+    tg_contacts: Vec<(String, String)>,
+    tg_contact: Option<String>,
+    /// Telegram glyph masks, decoded once per window.
+    tg_textures: icons::TgTextures,
+    /// Discord's own rail, sidebar page and Friends tab.
+    dc_section: DcSection,
+    /// Friends page tab: 0 All, 1 Online.
+    dc_tab: u8,
+    dc_muted: bool,
+    dc_deafened: bool,
+    /// Discord glyph masks, decoded once per window.
+    dc_textures: icons::DcTextures,
     /// Set when the conversation header's search button is pressed; the chat
     /// list consumes it on the next frame to focus its field.
     search_focus: bool,
@@ -391,6 +2143,30 @@ impl UnitedApp {
             search: String::new(),
             unread_only: false,
             search_focus: false,
+            wa_section: WaSection::Chats,
+            wa_modal: None,
+            wa_calls: Vec::new(),
+            wa_channels: Vec::new(),
+            wa_media: Vec::new(),
+            wa_links: Vec::new(),
+            wa_media_tab: 0,
+            wa_media_query: String::new(),
+            wa_search: String::new(),
+            wa_settings_page: None,
+            wa_banner_hidden: false,
+            wa_textures: icons::WaTextures::default(),
+            tg_section: TgSection::Chats,
+            tg_settings_tab: TgSettingsTab::Account,
+            tg_drawer: false,
+            tg_more: false,
+            tg_contacts: Vec::new(),
+            tg_contact: None,
+            tg_textures: icons::TgTextures::default(),
+            dc_section: DcSection::Friends,
+            dc_tab: 0,
+            dc_muted: false,
+            dc_deafened: false,
+            dc_textures: icons::DcTextures::default(),
             statuses: HashMap::new(),
             prompt: None,
             prompt_buf: String::new(),
@@ -653,6 +2429,41 @@ impl UnitedApp {
         if std::env::var("UNITED_VIEW").as_deref() == Ok("settings") {
             app.view = View::Settings;
         }
+        // Debug hook: UNITED_WA_TAB=calls|status|channels|communities|business|
+        // profile|media|advertise opens a WhatsApp tab for screenshots.
+        if let Ok(tab) = std::env::var("UNITED_WA_TAB") {
+            app.view = View::Service(Service::WhatsApp);
+            match tab.as_str() {
+                "media" | "advertise" => {
+                    app.wa_media = app
+                        .store
+                        .media_messages(Service::WhatsApp, 120)
+                        .unwrap_or_default();
+                    app.wa_links = app
+                        .store
+                        .link_messages(Service::WhatsApp, 80)
+                        .unwrap_or_default();
+                    app.wa_modal = Some(if tab == "media" {
+                        WaModal::Media
+                    } else {
+                        WaModal::Advertise
+                    });
+                }
+                other => {
+                    let section = match other {
+                        "calls" => WaSection::Calls,
+                        "status" => WaSection::Status,
+                        "channels" => WaSection::Channels,
+                        "communities" => WaSection::Communities,
+                        "business" => WaSection::Business,
+                        "profile" => WaSection::Profile,
+                        "settings" => WaSection::Settings,
+                        _ => WaSection::Chats,
+                    };
+                    app.wa_open(section);
+                }
+            }
+        }
         // Debug hook: UNITED_OPEN_CHAT=account|chat opens a conversation on launch.
         if let Ok(spec) = std::env::var("UNITED_OPEN_CHAT") {
             if let Some((account, chat_id)) = spec.split_once('|') {
@@ -673,6 +2484,64 @@ impl UnitedApp {
         if std::env::var("UNITED_EMOJI").is_ok() {
             app.emoji_open = true;
         }
+        // Debug hook: UNITED_TG=drawer|more|contacts|settings|profile|info
+        // opens a Telegram Web A pane for screenshots.
+        if let Ok(tab) = std::env::var("UNITED_TG") {
+            app.view = View::Service(Service::Telegram);
+            match tab.as_str() {
+                "drawer" => {
+                    app.tg_section = TgSection::Chats;
+                    app.tg_drawer = true;
+                }
+                "more" => {
+                    app.tg_section = TgSection::Chats;
+                    app.tg_drawer = true;
+                    app.tg_more = true;
+                }
+                "contacts" => app.tg_open(TgSection::Contacts),
+                "settings" => {
+                    app.tg_open(TgSection::Settings);
+                    app.tg_settings_tab = TgSettingsTab::General;
+                }
+                "account" => app.tg_open(TgSection::Settings),
+                "profile" => app.tg_open(TgSection::Profile),
+                "info" => app.tg_open(TgSection::Info(TgInfo::Features)),
+                _ => app.tg_open(TgSection::Chats),
+            }
+        }
+        // Debug hook: UNITED_DC=friends|nitro|shop|quests|addfriend|addserver|
+        // discover opens a Discord pane for screenshots.
+        if let Ok(tab) = std::env::var("UNITED_DC") {
+            app.view = View::Service(Service::Discord);
+            // Screenshots run without a bot token, so the sign-in sheet would
+            // cover every pane.
+            app.prompt = None;
+            app.prompt_buf.clear();
+            app.prompt_buf2.clear();
+            app.dc_section = match tab.as_str() {
+                "nitro" => DcSection::Nitro,
+                "shop" => DcSection::Shop,
+                "quests" => DcSection::Quests,
+                "addfriend" => DcSection::AddFriend,
+                "addserver" => DcSection::AddServer,
+                "discover" => DcSection::Discover,
+                "dm" => {
+                    app.dc_section = DcSection::Chat;
+                    // Demo rows only load in refresh_lists, so seed one here.
+                    let chat = app
+                        .chats
+                        .iter()
+                        .find(|c| c.service == Service::Discord)
+                        .cloned()
+                        .or_else(|| dc_demo_chats().into_iter().next());
+                    if let Some(chat) = chat {
+                        app.open_chat(chat);
+                    }
+                    return app;
+                }
+                _ => DcSection::Friends,
+            };
+        }
         app
     }
 
@@ -684,6 +2553,13 @@ impl UnitedApp {
         self.chats = self.store.chats(service, 5000).unwrap_or_default();
         self.unified = self.store.chats(None, 5000).unwrap_or_default();
         self.chat_flags = self.store.chat_flags().unwrap_or_default();
+        // Debug hook: UNITED_DC screenshots run without a linked bot, so a
+        // later Chats event must not wipe the sample rows.
+        if std::env::var("UNITED_DC").is_ok()
+            && self.chats.iter().all(|c| c.service != Service::Discord)
+        {
+            self.chats.extend(dc_demo_chats());
+        }
     }
 
     /// Patch one conversation in the loaded lists instead of re-reading
@@ -824,6 +2700,11 @@ impl UnitedApp {
                 }
             }
             CoreEvent::Auth { service, prompt } => {
+                // UNITED_DC screenshots run without a linked bot; the token
+                // sheet would cover the pane under test.
+                if service == Service::Discord && std::env::var("UNITED_DC").is_ok() {
+                    return;
+                }
                 if let AuthPrompt::Qr { payload } = &prompt {
                     self.qr = qr::qr_texture(ctx, payload, "wa-qr").map(|t| (payload.clone(), t));
                 } else {
@@ -836,7 +2717,9 @@ impl UnitedApp {
                 let _ = self.store.upsert_chats(&chats);
                 if let View::Service(active) = self.view {
                     if active == service {
-                        self.chats = self.store.chats(Some(service), 5000).unwrap_or_default();
+                        // Goes through refresh_lists so the UNITED_DC sample
+                        // rows survive a late Chats event.
+                        self.refresh_lists();
                     }
                 }
                 self.unified = self.store.chats(None, 5000).unwrap_or_default();
@@ -994,6 +2877,26 @@ impl UnitedApp {
                     .map(|chat| chat.title.clone())
                     .or_else(|| self.name_of(&account, &chat_id))
                     .unwrap_or_else(|| chat_id.clone());
+                // Persist every state so the Calls tab shows history even
+                // after the overlay is gone.
+                let now = united_core::model::now_secs();
+                let key = if call_id.is_empty() {
+                    format!("{chat_id}:{now}")
+                } else {
+                    call_id.clone()
+                };
+                let _ = self.store.log_call(
+                    &account,
+                    &chat_id,
+                    &key,
+                    state == CallState::Ringing,
+                    matches!(state, CallState::Connecting | CallState::Active),
+                    state == CallState::Ended,
+                    now,
+                );
+                if self.wa_section == WaSection::Calls {
+                    self.wa_calls = self.store.calls("whatsapp:me", 200).unwrap_or_default();
+                }
                 match state {
                     CallState::Ended => {
                         let current = self.call.as_ref();
@@ -1934,6 +3837,7 @@ impl UnitedApp {
         // frame was the single hottest query in the UI thread.
         self.unified
             .iter()
+            .chain(self.chats.iter())
             .find(|c| c.service == service && &c.account.0 == account && &c.id == chat_id)
             .cloned()
             .or_else(|| self.store.chat(account, chat_id).ok().flatten())
@@ -2292,7 +4196,3750 @@ impl UnitedApp {
             });
     }
 
+    /// WhatsApp Web's own rail. Media and Advertise are sheets; everything
+    /// else swaps the list pane or the full-width page.
+    fn wa_rail(&mut self, ui: &mut egui::Ui) {
+        let p = theme::service_palette(self.mode, Service::WhatsApp);
+        egui::Panel::left("wa-rail")
+            .exact_size(64.0)
+            .frame(Frame::new().fill(p.panel))
+            .show(ui, |ui| {
+                let full = ui.max_rect();
+                ui.painter().vline(
+                    full.right() - HAIRLINE / 2.0,
+                    full.y_range(),
+                    Stroke::new(HAIRLINE, p.divider),
+                );
+                ui.add_space(10.0);
+                ui.vertical_centered(|ui| {
+                    let unread: u32 = self.chats.iter().map(|c| c.unread).sum();
+                    for section in [
+                        WaSection::Chats,
+                        WaSection::Calls,
+                        WaSection::Status,
+                        WaSection::Channels,
+                        WaSection::Communities,
+                    ] {
+                        let badge = if section == WaSection::Chats {
+                            unread
+                        } else {
+                            0
+                        };
+                        let Some(icon) = section.wa_icon() else {
+                            continue;
+                        };
+                        let resp = wa_tile(
+                            ui,
+                            &mut self.wa_textures,
+                            icon,
+                            self.wa_section == section,
+                            &p,
+                            badge,
+                        );
+                        if resp.clicked() {
+                            self.wa_open(section);
+                        }
+                        resp.on_hover_text(section.label());
+                        ui.add_space(4.0);
+                    }
+                    ui.add_space(8.0);
+                    let line = ui.max_rect();
+                    ui.painter().hline(
+                        egui::Rangef::new(line.left() + 14.0, line.right() - 14.0),
+                        line.top(),
+                        Stroke::new(HAIRLINE, p.divider),
+                    );
+                    ui.add_space(12.0);
+                    let business = wa_tile(
+                        ui,
+                        &mut self.wa_textures,
+                        icons::WaIcon::Store,
+                        self.wa_section == WaSection::Business,
+                        &p,
+                        0,
+                    );
+                    if business.clicked() {
+                        self.wa_open(WaSection::Business);
+                    }
+                    business.on_hover_text("Fitur bisnis");
+                    ui.add_space(4.0);
+                    let advertise = wa_tile(
+                        ui,
+                        &mut self.wa_textures,
+                        icons::WaIcon::Advertise,
+                        false,
+                        &p,
+                        0,
+                    );
+                    if advertise.clicked() {
+                        self.wa_modal = Some(WaModal::Advertise);
+                    }
+                    advertise.on_hover_text("Iklankan");
+                });
+                ui.with_layout(egui::Layout::bottom_up(egui::Align::Center), |ui| {
+                    ui.add_space(12.0);
+                    let profile = self.wa_profile_tile(ui, &p);
+                    if profile.clicked() {
+                        self.wa_open(WaSection::Profile);
+                    }
+                    profile.on_hover_text("Profil");
+                    ui.add_space(4.0);
+                    let settings = wa_tile(
+                        ui,
+                        &mut self.wa_textures,
+                        icons::WaIcon::Settings,
+                        self.wa_section == WaSection::Settings,
+                        &p,
+                        0,
+                    );
+                    if settings.clicked() {
+                        self.wa_open(WaSection::Settings);
+                    }
+                    settings.on_hover_text("Pengaturan");
+                    ui.add_space(4.0);
+                    let media = wa_tile(
+                        ui,
+                        &mut self.wa_textures,
+                        icons::WaIcon::Media,
+                        false,
+                        &p,
+                        0,
+                    );
+                    if media.clicked() {
+                        self.wa_media = self
+                            .store
+                            .media_messages(Service::WhatsApp, 120)
+                            .unwrap_or_default();
+                        self.wa_links = self
+                            .store
+                            .link_messages(Service::WhatsApp, 80)
+                            .unwrap_or_default();
+                        self.wa_media_tab = 0;
+                        self.wa_media_query.clear();
+                        self.wa_modal = Some(WaModal::Media);
+                    }
+                    media.on_hover_text("Media");
+                });
+            });
+    }
+
+    /// Bottom rail tile: the account's own profile picture when the adapter
+    /// has fetched it, otherwise a person mark.
+    fn wa_profile_tile(&mut self, ui: &mut egui::Ui, p: &Palette) -> egui::Response {
+        let (rect, resp) = ui.allocate_exact_size(Vec2::splat(40.0), Sense::click());
+        if self.wa_section == WaSection::Profile {
+            ui.painter()
+                .rect_filled(rect, CornerRadius::same(10), p.selected);
+        } else if resp.hovered() {
+            ui.painter()
+                .rect_filled(rect, CornerRadius::same(10), p.hover);
+        }
+        let path = self.sender_avatar_path("whatsapp:me", "me");
+        let avatar = self.avatar_texture(ui.ctx(), path.as_deref());
+        let avatar_rect = Rect::from_center_size(rect.center(), Vec2::splat(28.0));
+        if let Some(texture) = avatar {
+            egui::Image::new((texture.id(), Vec2::splat(28.0)))
+                .corner_radius(14)
+                .paint_at(ui, avatar_rect);
+        } else {
+            ui.painter()
+                .circle_filled(avatar_rect.center(), 14.0, p.input_bg);
+            icons::paint(
+                ui.painter(),
+                Rect::from_center_size(avatar_rect.center(), Vec2::splat(18.0)),
+                Icon::Person,
+                p.text_muted,
+                1.5,
+            );
+        }
+        if resp.hovered() {
+            ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
+        }
+        resp
+    }
+
+    fn wa_open(&mut self, section: WaSection) {
+        self.wa_section = section;
+        self.wa_search.clear();
+        self.wa_settings_page = None;
+        self.search.clear();
+        self.unread_only = false;
+        match section {
+            WaSection::Calls => {
+                self.wa_calls = self.store.calls("whatsapp:me", 200).unwrap_or_default();
+            }
+            WaSection::Channels => {
+                self.wa_channels = self
+                    .store
+                    .channels(Service::WhatsApp, 500)
+                    .unwrap_or_default();
+            }
+            _ => {}
+        }
+    }
+
+    /// List pane for the non-chat WhatsApp tabs. Chat keeps the existing list
+    /// so search, filters, pinned rows and archived chats stay untouched.
+    fn wa_pane(&mut self, ui: &mut egui::Ui, p: &Palette) {
+        match self.wa_section {
+            WaSection::Calls => self.wa_calls_pane(ui, p),
+            WaSection::Status => self.wa_status_pane(ui, p),
+            WaSection::Channels => self.wa_channels_pane(ui, p),
+            WaSection::Communities => self.wa_communities_pane(ui, p),
+            WaSection::Settings => self.wa_settings_pane(ui, p),
+            _ => {}
+        }
+    }
+
+    /// Business tools split into a 340px menu and a centred detail card; the
+    /// profile is a full-width page with its own top bar.
+    fn wa_page(&mut self, ui: &mut egui::Ui) {
+        let p = theme::service_palette(self.mode, Service::WhatsApp);
+        match self.wa_section {
+            WaSection::Business => {
+                egui::Panel::left("wa-business-list")
+                    .exact_size(340.0)
+                    .resizable(false)
+                    .frame(Frame::new().fill(p.panel))
+                    .show(ui, |ui| {
+                        let full = ui.max_rect();
+                        ui.painter().vline(
+                            full.right() - HAIRLINE / 2.0,
+                            full.y_range(),
+                            Stroke::new(HAIRLINE, p.divider),
+                        );
+                        self.wa_business_pane(ui, &p);
+                    });
+                egui::CentralPanel::default()
+                    .frame(Frame::new().fill(p.chat_bg))
+                    .show(ui, |ui| {
+                        ui.add_space(140.0);
+                        ui.vertical_centered(|ui| {
+                            let (rect, _) =
+                                ui.allocate_exact_size(Vec2::splat(64.0), Sense::hover());
+                            self.wa_textures.paint(
+                                ui.ctx(),
+                                ui.painter(),
+                                Rect::from_center_size(rect.center(), Vec2::splat(56.0)),
+                                icons::WaIcon::Store,
+                                p.text_muted.gamma_multiply(0.55),
+                            );
+                            ui.add_space(12.0);
+                            ui.label(
+                                RichText::new("Alat bisnis")
+                                    .font(theme::semibold(20.0))
+                                    .color(p.text),
+                            );
+                            ui.add_space(6.0);
+                            ui.label(
+                                RichText::new(
+                                    "Kelola bisnis dan jangkau lebih banyak pelanggan, semua \
+                                     di satu tempat.",
+                                )
+                                .font(theme::regular(12.0))
+                                .color(p.text_muted),
+                            );
+                        });
+                    });
+            }
+            WaSection::Profile => {
+                egui::CentralPanel::default()
+                    .frame(Frame::new().fill(p.panel))
+                    .show(ui, |ui| self.wa_profile_pane(ui, &p));
+            }
+            _ => {}
+        }
+    }
+
+    /// Right-hand detail for every WhatsApp tab that keeps the list column.
+    fn wa_detail(&mut self, ui: &mut egui::Ui) {
+        let p = theme::service_palette(self.mode, Service::WhatsApp);
+        let section = self.wa_section;
+        let mut pressed = None;
+        egui::CentralPanel::default()
+            .frame(Frame::new().fill(p.chat_bg))
+            .show(ui, |ui| {
+                pressed = match section {
+                    WaSection::Calls => wa_detail_card(
+                        ui,
+                        &mut self.wa_textures,
+                        &p,
+                        icons::WaIcon::LaptopCalling,
+                        "Telepon suara dan video",
+                        "Bagikan layar, beri reaksi dengan emoji, dan banyak lagi, dengan \
+                         maksimum 32 orang.",
+                        &[
+                            (icons::WaIcon::VideoCall, "Mulai telepon"),
+                            (icons::WaIcon::Link, "Tautan menelepon baru"),
+                            (icons::WaIcon::Dialpad, "Telepon nomor"),
+                        ],
+                        Some("Telepon pribadi Anda terenkripsi secara end-to-end"),
+                    ),
+                    WaSection::Status => wa_detail_card(
+                        ui,
+                        &mut self.wa_textures,
+                        &p,
+                        icons::WaIcon::Status,
+                        "Bagikan status",
+                        "Bagikan foto, video, dan teks yang hilang setelah 24 jam.",
+                        &[
+                            (icons::WaIcon::Edit, "Status teks"),
+                            (icons::WaIcon::Camera, "Foto dan video"),
+                        ],
+                        None,
+                    ),
+                    WaSection::Channels => wa_detail_card(
+                        ui,
+                        &mut self.wa_textures,
+                        &p,
+                        icons::WaIcon::Channels,
+                        "Temukan saluran",
+                        "Hiburan, olahraga, berita, gaya hidup, toko, dan lainnya. Ikuti \
+                         saluran yang Anda minati.",
+                        &[
+                            (icons::WaIcon::Add, "Buat saluran"),
+                            (icons::WaIcon::Grid, "Jelajahi saluran"),
+                        ],
+                        None,
+                    ),
+                    WaSection::Communities => wa_detail_card(
+                        ui,
+                        &mut self.wa_textures,
+                        &p,
+                        icons::WaIcon::Communities,
+                        "Buat komunitas",
+                        "Kumpulkan anggota dalam grup-grup berdasarkan topik dan kirim \
+                         pengumuman admin dengan mudah.",
+                        &[],
+                        Some("Pesan pribadi Anda di komunitas terenkripsi secara end-to-end"),
+                    ),
+                    WaSection::Settings => {
+                        self.wa_settings_detail(ui, &p);
+                        None
+                    }
+                    _ => {
+                        let icon = section.wa_icon().unwrap_or(icons::WaIcon::AccountCircle);
+                        ui.add_space(150.0);
+                        ui.vertical_centered(|ui| {
+                            let (rect, _) =
+                                ui.allocate_exact_size(Vec2::splat(64.0), Sense::hover());
+                            self.wa_textures.paint(
+                                ui.ctx(),
+                                ui.painter(),
+                                Rect::from_center_size(rect.center(), Vec2::splat(56.0)),
+                                icon,
+                                p.text_muted.gamma_multiply(0.5),
+                            );
+                            ui.add_space(14.0);
+                            ui.label(
+                                RichText::new(section.label())
+                                    .font(theme::semibold(20.0))
+                                    .color(p.text),
+                            );
+                        });
+                        None
+                    }
+                };
+            });
+        match (section, pressed) {
+            (WaSection::Calls, Some(0)) => self.notify("Pilih obrolan untuk memulai panggilan."),
+            (WaSection::Calls, Some(1)) => self.notify("Tautan panggilan dibuat dari ponsel Anda."),
+            (WaSection::Calls, Some(_)) => self.notify("Telepon nomor dari ponsel Anda."),
+            (WaSection::Status, Some(0)) => self.notify("Status teks dibuat dari ponsel."),
+            (WaSection::Status, Some(_)) => {
+                self.notify("Pilih foto atau video status dari ponsel.")
+            }
+            (WaSection::Channels, Some(0)) => self.notify("Buat saluran dari ponsel Anda."),
+            (WaSection::Channels, Some(_)) => self.notify("Jelajahi saluran dari ponsel Anda."),
+            _ => {}
+        }
+    }
+
+    fn wa_calls_pane(&mut self, ui: &mut egui::Ui, p: &Palette) {
+        let header = wa_header(
+            ui,
+            &mut self.wa_textures,
+            p,
+            "Panggilan",
+            &[icons::WaIcon::AddCall, icons::WaIcon::More],
+        );
+        if header == Some(0) {
+            self.notify("Mulai panggilan dari sebuah obrolan.");
+        }
+        Frame::new()
+            .inner_margin(Margin {
+                left: 16,
+                right: 16,
+                top: 0,
+                bottom: 10,
+            })
+            .show(ui, |ui| {
+                wa_search_box(
+                    ui,
+                    &mut self.wa_textures,
+                    p,
+                    &mut self.wa_search,
+                    "Cari nama, nomor, atau @namapengguna",
+                );
+            });
+        let query = self.wa_search.trim().to_lowercase();
+        let rows = self.wa_calls.clone();
+        let mut open = None;
+        ScrollArea::vertical()
+            .auto_shrink([false, false])
+            .show(ui, |ui| {
+                if wa_section_row(ui, p, "Favorit", Some("Lihat semua")) {
+                    self.notify("Favorit dikelola dari ponsel Anda.");
+                }
+                let own = self.wa_account_label();
+                let path = self.sender_avatar_path("whatsapp:me", "me");
+                let picture = self.avatar_texture(ui.ctx(), path.as_deref());
+                let width = ui.available_width();
+                let (rect, resp) = ui.allocate_exact_size(Vec2::new(width, 62.0), Sense::click());
+                if resp.hovered() {
+                    ui.painter().rect_filled(rect, CornerRadius::ZERO, p.hover);
+                }
+                wa_avatar(
+                    ui,
+                    p,
+                    egui::pos2(rect.left() + 40.0, rect.center().y),
+                    44.0,
+                    &own,
+                    picture.as_ref(),
+                    None,
+                );
+                ui.painter().text(
+                    egui::pos2(rect.left() + 74.0, rect.center().y),
+                    egui::Align2::LEFT_CENTER,
+                    format!("{} (Anda)", format_phone(&own)),
+                    theme::regular(14.0),
+                    p.text,
+                );
+                if resp.clicked() {
+                    self.notify("Ini nomor WhatsApp Anda.");
+                }
+                wa_section_row(ui, p, "Terbaru", None);
+                let mut shown = 0usize;
+                for entry in rows {
+                    let known = self.chats.iter().find(|c| c.id == entry.chat_id).cloned();
+                    let title = known.as_ref().map(|c| c.title.clone()).unwrap_or_else(|| {
+                        entry
+                            .chat_id
+                            .split('@')
+                            .next()
+                            .unwrap_or(&entry.chat_id)
+                            .to_string()
+                    });
+                    if !query.is_empty() && !title.to_lowercase().contains(&query) {
+                        continue;
+                    }
+                    shown += 1;
+                    let outgoing = entry.outgoing;
+                    let answered = entry.answered;
+                    let at = entry.at;
+                    let chat = Chat {
+                        id: entry.chat_id.clone(),
+                        account: united_core::AccountId("whatsapp:me".into()),
+                        service: Service::WhatsApp,
+                        title: title.clone(),
+                        is_group: known.as_ref().is_some_and(|c| c.is_group),
+                        avatar: known.as_ref().and_then(|c| c.avatar.clone()),
+                        unread: 0,
+                        muted: false,
+                        last_at: at,
+                        preview: String::new(),
+                        preview_sender: String::new(),
+                        target: entry.chat_id.clone(),
+                    };
+                    self.preload_avatar(&chat);
+                    let picture = self.avatar_texture(ui.ctx(), chat.avatar.as_deref());
+                    let time = format::chat_time(at);
+                    if wa_call_row(
+                        ui,
+                        &mut self.wa_textures,
+                        p,
+                        &title,
+                        &time,
+                        picture.as_ref(),
+                        outgoing,
+                        answered,
+                    )
+                    .clicked()
+                    {
+                        open = Some(chat);
+                    }
+                }
+                if shown == 0 {
+                    ui.add_space(14.0);
+                    Frame::new()
+                        .inner_margin(Margin::symmetric(16, 0))
+                        .show(ui, |ui| {
+                            ui.label(
+                                RichText::new(if query.is_empty() {
+                                    "Belum ada panggilan"
+                                } else {
+                                    "Tidak ada panggilan yang cocok"
+                                })
+                                .font(theme::regular(12.0))
+                                .color(p.text_muted),
+                            );
+                        });
+                }
+            });
+        if let Some(chat) = open {
+            self.open_chat(chat);
+            self.wa_section = WaSection::Chats;
+            self.wa_search.clear();
+        }
+    }
+
+    fn wa_status_pane(&mut self, ui: &mut egui::Ui, p: &Palette) {
+        let header = wa_header(
+            ui,
+            &mut self.wa_textures,
+            p,
+            "Status",
+            &[icons::WaIcon::AddCircle, icons::WaIcon::More],
+        );
+        if header == Some(0) {
+            self.notify("Pembaruan status dibuat dari ponsel Anda.");
+        }
+        let width = ui.available_width();
+        let (rect, resp) = ui.allocate_exact_size(Vec2::new(width, 68.0), Sense::click());
+        if resp.hovered() {
+            ui.painter().rect_filled(rect, CornerRadius::ZERO, p.hover);
+        }
+        let path = self.sender_avatar_path("whatsapp:me", "me");
+        let picture = self.avatar_texture(ui.ctx(), path.as_deref());
+        let own = self.wa_account_label();
+        wa_avatar(
+            ui,
+            p,
+            egui::pos2(rect.left() + 40.0, rect.center().y),
+            44.0,
+            &own,
+            picture.as_ref(),
+            None,
+        );
+        let badge = egui::pos2(rect.left() + 58.0, rect.center().y + 15.0);
+        ui.painter()
+            .circle_filled(badge, 9.0, Color32::from_rgb(0x25, 0xd3, 0x66));
+        ui.painter().text(
+            badge,
+            egui::Align2::CENTER_CENTER,
+            "+",
+            theme::semibold(12.0),
+            Color32::WHITE,
+        );
+        ui.painter().text(
+            egui::pos2(rect.left() + 74.0, rect.top() + 24.0),
+            egui::Align2::LEFT_CENTER,
+            "Status saya",
+            theme::medium(14.0),
+            p.text,
+        );
+        ui.painter().text(
+            egui::pos2(rect.left() + 74.0, rect.top() + 44.0),
+            egui::Align2::LEFT_CENTER,
+            "Klik untuk membuat pembaruan status",
+            theme::regular(11.5),
+            p.text_muted,
+        );
+        if resp.clicked() {
+            self.notify("Status baru dibuat dari ponsel Anda.");
+        }
+        wa_section_row(ui, p, "TERBARU", None);
+        ui.add_space(18.0);
+        Frame::new()
+            .inner_margin(Margin::symmetric(16, 0))
+            .show(ui, |ui| {
+                ui.label(
+                    RichText::new(
+                        "Pembaruan status dari kontak Anda akan muncul di sini. Status \
+                         hanya tersedia di ponsel.",
+                    )
+                    .font(theme::regular(11.5))
+                    .color(p.text_muted),
+                );
+            });
+    }
+
+    fn wa_channels_pane(&mut self, ui: &mut egui::Ui, p: &Palette) {
+        let header = wa_header(
+            ui,
+            &mut self.wa_textures,
+            p,
+            "Saluran",
+            &[icons::WaIcon::AddCircle],
+        );
+        if header == Some(0) {
+            self.notify("Buat saluran dari ponsel Anda.");
+        }
+        Frame::new()
+            .inner_margin(Margin {
+                left: 16,
+                right: 16,
+                top: 0,
+                bottom: 10,
+            })
+            .show(ui, |ui| {
+                wa_search_box(ui, &mut self.wa_textures, p, &mut self.wa_search, "Cari");
+            });
+        let query = self.wa_search.trim().to_lowercase();
+        let rows = self.wa_channels.clone();
+        let mut open = None;
+        let mut shown = 0usize;
+        ScrollArea::vertical()
+            .auto_shrink([false, false])
+            .show(ui, |ui| {
+                for chat in rows {
+                    if !query.is_empty() && !chat.title.to_lowercase().contains(&query) {
+                        continue;
+                    }
+                    shown += 1;
+                    self.preload_avatar(&chat);
+                    let picture = self.avatar_texture(ui.ctx(), chat.avatar.as_deref());
+                    let time = format::chat_time(chat.last_at);
+                    if wa_channel_row(ui, p, &chat, &time, picture.as_ref()).clicked() {
+                        open = Some(chat);
+                    }
+                }
+                if shown == 0 {
+                    ui.add_space(14.0);
+                    Frame::new()
+                        .inner_margin(Margin::symmetric(16, 0))
+                        .show(ui, |ui| {
+                            ui.label(
+                                RichText::new(if query.is_empty() {
+                                    "Belum ada saluran"
+                                } else {
+                                    "Tidak ada saluran yang cocok"
+                                })
+                                .font(theme::regular(12.0))
+                                .color(p.text_muted),
+                            );
+                        });
+                }
+            });
+        if let Some(chat) = open {
+            self.open_chat(chat);
+            self.wa_section = WaSection::Chats;
+            self.wa_search.clear();
+        }
+    }
+
+    fn wa_communities_pane(&mut self, ui: &mut egui::Ui, p: &Palette) {
+        wa_header(ui, &mut self.wa_textures, p, "Komunitas", &[]);
+        ui.add_space(42.0);
+        ui.vertical_centered(|ui| {
+            let (rect, _) = ui.allocate_exact_size(Vec2::splat(64.0), Sense::hover());
+            self.wa_textures.paint(
+                ui.ctx(),
+                ui.painter(),
+                Rect::from_center_size(rect.center(), Vec2::splat(56.0)),
+                icons::WaIcon::GroupFilled,
+                p.text_muted.gamma_multiply(0.55),
+            );
+            ui.add_space(12.0);
+            ui.label(
+                RichText::new("Belum ada komunitas")
+                    .font(theme::medium(13.5))
+                    .color(p.text),
+            );
+            ui.add_space(4.0);
+            ui.label(
+                RichText::new("Komunitas yang Anda ikuti akan muncul di sini.")
+                    .font(theme::regular(11.5))
+                    .color(p.text_muted),
+            );
+        });
+    }
+
+    fn wa_business_pane(&mut self, ui: &mut egui::Ui, p: &Palette) {
+        wa_header(ui, &mut self.wa_textures, p, "Fitur bisnis", &[]);
+        ScrollArea::vertical()
+            .auto_shrink([false, false])
+            .show(ui, |ui| {
+                wa_group_label(ui, p, "Kembangkan bisnis Anda");
+                if wa_menu_row(
+                    ui,
+                    &mut self.wa_textures,
+                    p,
+                    icons::WaIcon::MetaOne,
+                    "Meta One",
+                    "Buka fitur premium di seluruh aplikasi Meta",
+                    false,
+                ) {
+                    self.notify("Meta One tersedia di ponsel Anda.");
+                }
+                if wa_menu_row(
+                    ui,
+                    &mut self.wa_textures,
+                    p,
+                    icons::WaIcon::Weave,
+                    "Meta Business Agent",
+                    "Balas cepat ke pelanggan 24/7",
+                    true,
+                ) {
+                    self.notify("Meta Business Agent tersedia di ponsel Anda.");
+                }
+                if wa_menu_row(
+                    ui,
+                    &mut self.wa_textures,
+                    p,
+                    icons::WaIcon::Store,
+                    "Profil bisnis",
+                    "Kelola alamat, jam kerja, dan situs web",
+                    false,
+                ) {
+                    self.wa_open(WaSection::Profile);
+                }
+                if wa_menu_row(
+                    ui,
+                    &mut self.wa_textures,
+                    p,
+                    icons::WaIcon::Grid,
+                    "Katalog",
+                    "Tampilkan produk dan layanan",
+                    false,
+                ) {
+                    self.notify("Katalog tersedia di ponsel Anda.");
+                }
+                if wa_menu_row(
+                    ui,
+                    &mut self.wa_textures,
+                    p,
+                    icons::WaIcon::Receipt,
+                    "Order",
+                    "Kelola orderan dan pembayaran",
+                    false,
+                ) {
+                    self.notify("Order tersedia di ponsel Anda.");
+                }
+                wa_group_label(ui, p, "Jangkau lebih banyak pelanggan");
+                if wa_menu_row(
+                    ui,
+                    &mut self.wa_textures,
+                    p,
+                    icons::WaIcon::Advertise,
+                    "Iklankan",
+                    "Buat iklan yang mengarahkan pelanggan ke WhatsApp",
+                    false,
+                ) {
+                    self.wa_modal = Some(WaModal::Advertise);
+                }
+                if wa_menu_row(
+                    ui,
+                    &mut self.wa_textures,
+                    p,
+                    icons::WaIcon::Broadcast,
+                    "Siaran bisnis",
+                    "Lihat semua siaran dan audiens",
+                    true,
+                ) {
+                    self.notify("Siaran bisnis tersedia di ponsel Anda.");
+                }
+                wa_group_label(ui, p, "Perpesanan");
+                if wa_menu_row(
+                    ui,
+                    &mut self.wa_textures,
+                    p,
+                    icons::WaIcon::Bolt,
+                    "Balasan cepat",
+                    "Gunakan kembali pesan yang sering dikirim",
+                    false,
+                ) {
+                    self.notify("Balasan cepat tersedia di ponsel Anda.");
+                }
+                if wa_menu_row(
+                    ui,
+                    &mut self.wa_textures,
+                    p,
+                    icons::WaIcon::GridOn,
+                    "Daftar",
+                    "Kelola orang dan grup",
+                    false,
+                ) {
+                    self.notify("Daftar tersedia di ponsel Anda.");
+                }
+                if wa_menu_row(
+                    ui,
+                    &mut self.wa_textures,
+                    p,
+                    icons::WaIcon::Help,
+                    "Pusat bantuan bisnis",
+                    "Dapatkan bantuan, hubungi kami",
+                    false,
+                ) {
+                    widgets::open_url("https://faq.whatsapp.com/");
+                }
+                ui.add_space(20.0);
+            });
+    }
+
+    fn wa_settings_pane(&mut self, ui: &mut egui::Ui, p: &Palette) {
+        wa_header(ui, &mut self.wa_textures, p, "Pengaturan", &[]);
+        Frame::new()
+            .inner_margin(Margin {
+                left: 16,
+                right: 16,
+                top: 0,
+                bottom: 10,
+            })
+            .show(ui, |ui| {
+                wa_search_box(
+                    ui,
+                    &mut self.wa_textures,
+                    p,
+                    &mut self.wa_search,
+                    "Cari di pengaturan",
+                );
+            });
+        let query = self.wa_search.trim().to_lowercase();
+        let mut open_profile = false;
+        let mut open_business = false;
+        ScrollArea::vertical()
+            .auto_shrink([false, false])
+            .show(ui, |ui| {
+                if !self.wa_banner_hidden && query.is_empty() {
+                    Frame::new()
+                        .inner_margin(Margin::symmetric(16, 6))
+                        .show(ui, |ui| {
+                            Frame::new()
+                                .fill(p.input_bg)
+                                .corner_radius(10)
+                                .inner_margin(Margin::symmetric(12, 12))
+                                .show(ui, |ui| {
+                                    ui.horizontal(|ui| {
+                                        let (icon_rect, _) = ui
+                                            .allocate_exact_size(Vec2::splat(28.0), Sense::hover());
+                                        self.wa_textures.paint(
+                                            ui.ctx(),
+                                            ui.painter(),
+                                            Rect::from_center_size(
+                                                icon_rect.center(),
+                                                Vec2::splat(24.0),
+                                            ),
+                                            icons::WaIcon::Notifications,
+                                            p.text,
+                                        );
+                                        ui.add_space(4.0);
+                                        ui.vertical(|ui| {
+                                            ui.label(
+                                                RichText::new("Pilih notifikasi Anda")
+                                                    .font(theme::medium(13.0))
+                                                    .color(p.text),
+                                            );
+                                            ui.label(
+                                                RichText::new(
+                                                    "Dapatkan notifikasi untuk pesan, grup, \
+                                                     atau status Anda.",
+                                                )
+                                                .font(theme::regular(11.0))
+                                                .color(p.text_muted),
+                                            );
+                                            if wa_text_link(ui, p, "Pilih sekarang") {
+                                                self.wa_settings_page = Some("Notifikasi");
+                                            }
+                                        });
+                                        ui.with_layout(
+                                            egui::Layout::right_to_left(egui::Align::Min),
+                                            |ui| {
+                                                if wa_icon_button(
+                                                    ui,
+                                                    &mut self.wa_textures,
+                                                    icons::WaIcon::Close,
+                                                    p,
+                                                    26.0,
+                                                    16.0,
+                                                    p.text_muted,
+                                                )
+                                                .clicked()
+                                                {
+                                                    self.wa_banner_hidden = true;
+                                                }
+                                            },
+                                        );
+                                    });
+                                });
+                        });
+                    ui.add_space(6.0);
+                }
+                let own = self.wa_account_label();
+                let path = self.sender_avatar_path("whatsapp:me", "me");
+                let picture = self.avatar_texture(ui.ctx(), path.as_deref());
+                let width = ui.available_width();
+                let (rect, resp) = ui.allocate_exact_size(Vec2::new(width, 84.0), Sense::click());
+                if resp.hovered() {
+                    ui.painter().rect_filled(rect, CornerRadius::ZERO, p.hover);
+                }
+                wa_avatar(
+                    ui,
+                    p,
+                    egui::pos2(rect.left() + 54.0, rect.center().y),
+                    64.0,
+                    &own,
+                    picture.as_ref(),
+                    None,
+                );
+                ui.painter().text(
+                    egui::pos2(rect.left() + 100.0, rect.center().y),
+                    egui::Align2::LEFT_CENTER,
+                    format_phone(&own),
+                    theme::medium(15.0),
+                    p.text,
+                );
+                if resp.clicked() {
+                    open_profile = true;
+                }
+                let line = ui.available_width();
+                let (rule, _) = ui.allocate_exact_size(Vec2::new(line, 1.0), Sense::hover());
+                ui.painter().hline(
+                    egui::Rangef::new(rule.left() + 16.0, rule.right() - 16.0),
+                    rule.center().y,
+                    Stroke::new(HAIRLINE, p.divider),
+                );
+                let rows: [(&str, &str, icons::WaIcon); 9] = [
+                    (
+                        "Meta One",
+                        "Buka fitur premium di seluruh aplikasi Meta",
+                        icons::WaIcon::MetaOne,
+                    ),
+                    (
+                        "Fitur bisnis",
+                        "Balasan cepat, label, katalog",
+                        icons::WaIcon::Store,
+                    ),
+                    ("Akun", "Notifikasi keamanan, info akun", icons::WaIcon::Key),
+                    (
+                        "Privasi",
+                        "Kontak diblokir, pesan sementara",
+                        icons::WaIcon::Lock,
+                    ),
+                    (
+                        "Chat",
+                        "Tema, wallpaper, pengaturan obrolan",
+                        icons::WaIcon::Notes,
+                    ),
+                    (
+                        "Notifikasi",
+                        "Pesan, grup, suara",
+                        icons::WaIcon::Notifications,
+                    ),
+                    (
+                        "Pintasan keyboard",
+                        "Tindakan cepat",
+                        icons::WaIcon::Keyboard,
+                    ),
+                    (
+                        "Bantuan dan masukan",
+                        "Pusat Bantuan, hubungi kami, Kebijakan Privasi",
+                        icons::WaIcon::Help,
+                    ),
+                    (
+                        "Keluar",
+                        "Putuskan tautan perangkat ini",
+                        icons::WaIcon::Logout,
+                    ),
+                ];
+                for (title, detail, icon) in rows {
+                    if !query.is_empty()
+                        && !title.to_lowercase().contains(&query)
+                        && !detail.to_lowercase().contains(&query)
+                    {
+                        continue;
+                    }
+                    if wa_menu_row(ui, &mut self.wa_textures, p, icon, title, detail, false) {
+                        if title == "Fitur bisnis" {
+                            open_business = true;
+                        } else if title == "Keluar" {
+                            self.notify("Keluar dari WhatsApp dilakukan dari ponsel.");
+                        } else {
+                            self.wa_settings_page = Some(title);
+                        }
+                    }
+                }
+                ui.add_space(20.0);
+            });
+        if open_profile {
+            self.wa_open(WaSection::Profile);
+        } else if open_business {
+            self.wa_open(WaSection::Business);
+        }
+    }
+
+    /// Right side of the WhatsApp settings view: gear when nothing is chosen,
+    /// otherwise the real controls for the selected row.
+    fn wa_settings_detail(&mut self, ui: &mut egui::Ui, p: &Palette) {
+        let Some(page) = self.wa_settings_page else {
+            ui.add_space(170.0);
+            ui.vertical_centered(|ui| {
+                let (rect, _) = ui.allocate_exact_size(Vec2::splat(64.0), Sense::hover());
+                self.wa_textures.paint(
+                    ui.ctx(),
+                    ui.painter(),
+                    Rect::from_center_size(rect.center(), Vec2::splat(56.0)),
+                    icons::WaIcon::Settings,
+                    p.text_muted.gamma_multiply(0.55),
+                );
+                ui.add_space(14.0);
+                ui.label(
+                    RichText::new("Pengaturan")
+                        .font(theme::semibold(20.0))
+                        .color(p.text),
+                );
+            });
+            return;
+        };
+        let width = ui.available_width();
+        let (bar, _) = ui.allocate_exact_size(Vec2::new(width, 58.0), Sense::hover());
+        let back_rect = Rect::from_center_size(
+            egui::pos2(bar.left() + 28.0, bar.center().y),
+            Vec2::splat(38.0),
+        );
+        let back = ui.interact(back_rect, ui.id().with("wa-settings-back"), Sense::click());
+        if back.hovered() {
+            ui.painter()
+                .circle_filled(back_rect.center(), 19.0, p.hover);
+            ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
+        }
+        ui.painter().text(
+            back_rect.center(),
+            egui::Align2::CENTER_CENTER,
+            "\u{2190}",
+            theme::semibold(18.0),
+            p.text,
+        );
+        ui.painter().text(
+            egui::pos2(bar.left() + 52.0, bar.center().y),
+            egui::Align2::LEFT_CENTER,
+            page,
+            theme::semibold(16.0),
+            p.text,
+        );
+        if back.clicked() {
+            self.wa_settings_page = None;
+            return;
+        }
+        ui.painter().hline(
+            egui::Rangef::new(bar.left() + 16.0, bar.right() - 16.0),
+            bar.bottom() - 0.5,
+            Stroke::new(HAIRLINE, p.divider),
+        );
+        egui::ScrollArea::vertical()
+            .auto_shrink([false, false])
+            .show(ui, |ui| {
+                ui.add_space(12.0);
+                match page {
+                    "Notifikasi" => {
+                        let mut enabled = self.settings.desktop_notifications;
+                        if wa_toggle_row(
+                            ui,
+                            &mut self.wa_textures,
+                            p,
+                            icons::WaIcon::Notifications,
+                            "Notifikasi desktop",
+                            "Tampilkan pesan baru saat United berjalan di latar belakang",
+                            &mut enabled,
+                        ) {
+                            self.settings.desktop_notifications = enabled;
+                            self.settings_dirty = true;
+                        }
+                        wa_info_row(
+                            ui,
+                            &mut self.wa_textures,
+                            p,
+                            icons::WaIcon::Mail,
+                            "Pesan",
+                            "Semua pesan langsung",
+                        );
+                        wa_info_row(
+                            ui,
+                            &mut self.wa_textures,
+                            p,
+                            icons::WaIcon::GroupFilled,
+                            "Grup",
+                            "Semua pesan grup",
+                        );
+                        self.wa_settings_link(ui, p);
+                    }
+                    "Chat" => {
+                        wa_info_row(
+                            ui,
+                            &mut self.wa_textures,
+                            p,
+                            icons::WaIcon::Notes,
+                            "Tema",
+                            match self.mode {
+                                Mode::Dark => "Gelap",
+                                Mode::Light => "Terang",
+                            },
+                        );
+                        wa_info_row(
+                            ui,
+                            &mut self.wa_textures,
+                            p,
+                            icons::WaIcon::Image,
+                            "Wallpaper obrolan",
+                            "Bawaan WhatsApp",
+                        );
+                        self.wa_settings_link(ui, p);
+                    }
+                    "Akun" => {
+                        let label = self.wa_account_label();
+                        wa_info_row(
+                            ui,
+                            &mut self.wa_textures,
+                            p,
+                            icons::WaIcon::AccountCircle,
+                            "Nama profil",
+                            &label,
+                        );
+                        wa_info_row(
+                            ui,
+                            &mut self.wa_textures,
+                            p,
+                            icons::WaIcon::Key,
+                            "Verifikasi dua langkah",
+                            "Aktif di ponsel",
+                        );
+                        self.wa_settings_link(ui, p);
+                    }
+                    "Privasi" => {
+                        wa_info_row(
+                            ui,
+                            &mut self.wa_textures,
+                            p,
+                            icons::WaIcon::Block,
+                            "Kontak diblokir",
+                            "Kelola dari ponsel",
+                        );
+                        wa_info_row(
+                            ui,
+                            &mut self.wa_textures,
+                            p,
+                            icons::WaIcon::Schedule,
+                            "Pesan sementara",
+                            "Nonaktif",
+                        );
+                        self.wa_settings_link(ui, p);
+                    }
+                    "Pintasan keyboard" => {
+                        wa_info_row(
+                            ui,
+                            &mut self.wa_textures,
+                            p,
+                            icons::WaIcon::Keyboard,
+                            "Cari obrolan",
+                            "Ctrl + F",
+                        );
+                        wa_info_row(
+                            ui,
+                            &mut self.wa_textures,
+                            p,
+                            icons::WaIcon::Keyboard,
+                            "Obrolan berikutnya",
+                            "Ctrl + Tab",
+                        );
+                        wa_info_row(
+                            ui,
+                            &mut self.wa_textures,
+                            p,
+                            icons::WaIcon::Keyboard,
+                            "Tutup obrolan",
+                            "Esc",
+                        );
+                    }
+                    _ => {
+                        ui.add_space(40.0);
+                        ui.vertical_centered(|ui| {
+                            ui.label(
+                                RichText::new("Pengaturan ini dikelola dari ponsel Anda.")
+                                    .font(theme::regular(12.5))
+                                    .color(p.text_muted),
+                            );
+                        });
+                        self.wa_settings_link(ui, p);
+                    }
+                }
+                ui.add_space(24.0);
+            });
+    }
+
+    fn wa_settings_link(&mut self, ui: &mut egui::Ui, p: &Palette) {
+        ui.add_space(16.0);
+        Frame::new()
+            .inner_margin(Margin::symmetric(16, 0))
+            .show(ui, |ui| {
+                if primary_button(ui, p, "Buka pengaturan United") {
+                    self.view = View::Settings;
+                    self.settings_dirty = true;
+                }
+            });
+    }
+
+    fn wa_profile_pane(&mut self, ui: &mut egui::Ui, p: &Palette) {
+        let width = ui.available_width();
+        let (bar, _) = ui.allocate_exact_size(Vec2::new(width, 56.0), Sense::hover());
+        let close_rect = Rect::from_center_size(
+            egui::pos2(bar.left() + 30.0, bar.center().y),
+            Vec2::splat(40.0),
+        );
+        let close = ui.interact(close_rect, ui.id().with("wa-profile-close"), Sense::click());
+        if close.hovered() {
+            ui.painter()
+                .circle_filled(close_rect.center(), 20.0, p.hover);
+            ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
+        }
+        self.wa_textures.paint(
+            ui.ctx(),
+            ui.painter(),
+            Rect::from_center_size(close_rect.center(), Vec2::splat(22.0)),
+            icons::WaIcon::Close,
+            p.text,
+        );
+        ui.painter().text(
+            egui::pos2(bar.left() + 54.0, bar.center().y),
+            egui::Align2::LEFT_CENTER,
+            "Profil",
+            theme::medium(15.0),
+            p.text,
+        );
+        let save_rect = Rect::from_center_size(
+            egui::pos2(bar.right() - 52.0, bar.center().y),
+            Vec2::new(76.0, 32.0),
+        );
+        let save = ui.interact(save_rect, ui.id().with("wa-profile-save"), Sense::click());
+        ui.painter()
+            .rect_filled(save_rect, CornerRadius::same(16), p.input_bg);
+        ui.painter().text(
+            save_rect.center(),
+            egui::Align2::CENTER_CENTER,
+            "Simpan",
+            theme::medium(12.5),
+            p.text_muted,
+        );
+        ui.painter().hline(
+            egui::Rangef::new(bar.left(), bar.right()),
+            bar.bottom() - 0.5,
+            Stroke::new(HAIRLINE, p.divider),
+        );
+        if close.clicked() {
+            self.wa_open(WaSection::Chats);
+            return;
+        }
+        if save.clicked() {
+            self.notify("Profil bisnis disimpan.");
+        }
+        let name = self.wa_account_label();
+        let path = self.sender_avatar_path("whatsapp:me", "me");
+        let picture = self.avatar_texture(ui.ctx(), path.as_deref());
+        let mut action = false;
+        egui::ScrollArea::vertical()
+            .id_salt("wa-profile-scroll")
+            .auto_shrink([false, false])
+            .show(ui, |ui| {
+                let column = 680.0_f32.min(ui.available_width() - 48.0);
+                ui.add_space(22.0);
+                ui.horizontal(|ui| {
+                    ui.add_space((ui.available_width() - column) / 2.0);
+                    ui.vertical(|ui| {
+                        ui.set_width(column);
+                        let (cover, _) =
+                            ui.allocate_exact_size(Vec2::new(column, 150.0), Sense::hover());
+                        ui.painter()
+                            .rect_filled(cover, CornerRadius::same(10), p.input_bg);
+                        let cover_edit = Rect::from_center_size(
+                            egui::pos2(cover.right() - 48.0, cover.top() + 22.0),
+                            Vec2::new(78.0, 30.0),
+                        );
+                        ui.painter()
+                            .rect_filled(cover_edit, CornerRadius::same(15), p.header);
+                        self.wa_textures.paint(
+                            ui.ctx(),
+                            ui.painter(),
+                            Rect::from_center_size(
+                                egui::pos2(cover_edit.left() + 17.0, cover_edit.center().y),
+                                Vec2::splat(16.0),
+                            ),
+                            icons::WaIcon::Camera,
+                            p.accent,
+                        );
+                        ui.painter().text(
+                            egui::pos2(cover_edit.left() + 30.0, cover_edit.center().y),
+                            egui::Align2::LEFT_CENTER,
+                            "Edit",
+                            theme::medium(11.5),
+                            p.accent,
+                        );
+                        wa_avatar(
+                            ui,
+                            p,
+                            egui::pos2(cover.center().x, cover.bottom()),
+                            124.0,
+                            &name,
+                            picture.as_ref(),
+                            None,
+                        );
+                        ui.add_space(70.0);
+                        ui.vertical_centered(|ui| {
+                            if wa_text_link(ui, p, "Edit") {
+                                action = true;
+                            }
+                        });
+                        ui.add_space(14.0);
+                        ui.label(
+                            RichText::new("Informasi bisnis")
+                                .font(theme::semibold(16.0))
+                                .color(p.text),
+                        );
+                        ui.add_space(8.0);
+                        wa_info_row(
+                            ui,
+                            &mut self.wa_textures,
+                            p,
+                            icons::WaIcon::Notes,
+                            "Nama bisnis",
+                            &format_phone(&name),
+                        );
+                        ui.add_space(8.0);
+                        wa_input_row(
+                            ui,
+                            &mut self.wa_textures,
+                            p,
+                            icons::WaIcon::Grid,
+                            "Deskripsi",
+                        );
+                        wa_input_row(
+                            ui,
+                            &mut self.wa_textures,
+                            p,
+                            icons::WaIcon::Location,
+                            "Alamat",
+                        );
+                        wa_selector_row(
+                            ui,
+                            &mut self.wa_textures,
+                            p,
+                            "Area dalam cakupan",
+                            "Lokasi persis",
+                        );
+                        wa_selector_row(
+                            ui,
+                            &mut self.wa_textures,
+                            p,
+                            "Catatan lokasi",
+                            "Tambah catatan",
+                        );
+                        ui.add_space(20.0);
+                        ui.horizontal(|ui| {
+                            ui.label(
+                                RichText::new("Jam kerja")
+                                    .font(theme::semibold(14.0))
+                                    .color(p.text),
+                            );
+                            ui.with_layout(
+                                egui::Layout::right_to_left(egui::Align::Center),
+                                |ui| {
+                                    ui.label(
+                                        RichText::new("Selalu buka")
+                                            .font(theme::regular(11.5))
+                                            .color(p.text_muted),
+                                    );
+                                },
+                            );
+                        });
+                        for day in [
+                            "Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu",
+                        ] {
+                            let (row, _) =
+                                ui.allocate_exact_size(Vec2::new(column, 36.0), Sense::hover());
+                            ui.painter().text(
+                                egui::pos2(row.left(), row.center().y),
+                                egui::Align2::LEFT_CENTER,
+                                day,
+                                theme::regular(12.5),
+                                p.text,
+                            );
+                            ui.painter().text(
+                                egui::pos2(row.right() - 60.0, row.center().y),
+                                egui::Align2::RIGHT_CENTER,
+                                "Buka 24 jam",
+                                theme::regular(11.5),
+                                p.text_muted,
+                            );
+                            let edit_rect = Rect::from_center_size(
+                                egui::pos2(row.right() - 22.0, row.center().y),
+                                Vec2::new(40.0, 26.0),
+                            );
+                            let edit = ui.interact(
+                                edit_rect,
+                                ui.id().with(("wa-day", day)),
+                                Sense::click(),
+                            );
+                            ui.painter().text(
+                                edit_rect.center(),
+                                egui::Align2::CENTER_CENTER,
+                                "Edit",
+                                theme::medium(11.0),
+                                p.accent,
+                            );
+                            if edit.clicked() {
+                                action = true;
+                            }
+                            ui.painter().hline(
+                                egui::Rangef::new(row.left(), row.right()),
+                                row.bottom() - 0.5,
+                                Stroke::new(HAIRLINE, p.divider),
+                            );
+                        }
+                        ui.add_space(20.0);
+                        ui.horizontal(|ui| {
+                            ui.label(
+                                RichText::new("Kategori")
+                                    .font(theme::semibold(14.0))
+                                    .color(p.text),
+                            );
+                            ui.with_layout(
+                                egui::Layout::right_to_left(egui::Align::Center),
+                                |ui| {
+                                    let mut clicked = false;
+                                    if wa_text_link(ui, p, "Edit") {
+                                        clicked = true;
+                                    }
+                                    ui.add_space(12.0);
+                                    ui.label(
+                                        RichText::new("Bisnis lain")
+                                            .font(theme::regular(12.5))
+                                            .color(p.text),
+                                    );
+                                    action |= clicked;
+                                },
+                            );
+                        });
+                        ui.add_space(20.0);
+                        ui.label(
+                            RichText::new("Produk dan layanan")
+                                .font(theme::semibold(14.0))
+                                .color(p.text),
+                        );
+                        if wa_text_link(ui, p, "Tambah katalog") {
+                            action = true;
+                        }
+                        ui.add_space(16.0);
+                        ui.label(
+                            RichText::new("Tautan")
+                                .font(theme::semibold(14.0))
+                                .color(p.text),
+                        );
+                        wa_info_row(
+                            ui,
+                            &mut self.wa_textures,
+                            p,
+                            icons::WaIcon::Link,
+                            "Situs web",
+                            "Tambah situs web lain",
+                        );
+                        ui.add_space(16.0);
+                        ui.label(
+                            RichText::new("Informasi kontak")
+                                .font(theme::semibold(14.0))
+                                .color(p.text),
+                        );
+                        wa_info_row(
+                            ui,
+                            &mut self.wa_textures,
+                            p,
+                            icons::WaIcon::Mail,
+                            "Email",
+                            "Tambah email",
+                        );
+                        wa_info_row(
+                            ui,
+                            &mut self.wa_textures,
+                            p,
+                            icons::WaIcon::Call,
+                            "Nomor telepon",
+                            &name,
+                        );
+                        ui.add_space(40.0);
+                    });
+                });
+            });
+        if action {
+            self.notify("Edit profil bisnis dari ponsel Anda.");
+        }
+    }
+
+    fn wa_account_label(&self) -> String {
+        self.adapters
+            .get(&Service::WhatsApp)
+            .map(|a| a.label())
+            .filter(|label| !label.is_empty())
+            .unwrap_or_else(|| "Belum tertaut".to_string())
+    }
+
+    fn wa_media_sheet(&mut self, ctx: &egui::Context) {
+        let p = theme::service_palette(self.mode, Service::WhatsApp);
+        if modal_backdrop(ctx) {
+            self.wa_modal = None;
+            return;
+        }
+        let mut open = true;
+        egui::Window::new("wa-media")
+            .id(egui::Id::new("wa-media"))
+            .order(egui::Order::Foreground)
+            .title_bar(false)
+            .collapsible(false)
+            .resizable(false)
+            .fixed_size(Vec2::new(760.0, 500.0))
+            .anchor(egui::Align2::CENTER_CENTER, Vec2::new(0.0, 20.0))
+            .frame(
+                Frame::new()
+                    .fill(p.panel)
+                    .corner_radius(14)
+                    .stroke(Stroke::new(1.0, p.divider)),
+            )
+            .show(ctx, |ui| {
+                Frame::new()
+                    .inner_margin(Margin::symmetric(16, 10))
+                    .show(ui, |ui| {
+                        ui.horizontal(|ui| {
+                            for (index, label) in ["Media", "Dokumen", "Tautan"].iter().enumerate()
+                            {
+                                let active = self.wa_media_tab as usize == index;
+                                let text = RichText::new(*label)
+                                    .font(theme::medium(13.5))
+                                    .color(if active { p.accent } else { p.text_muted });
+                                if ui
+                                    .add(
+                                        egui::Button::new(text)
+                                            .fill(Color32::TRANSPARENT)
+                                            .corner_radius(6),
+                                    )
+                                    .clicked()
+                                {
+                                    self.wa_media_tab = index as u8;
+                                }
+                            }
+                            ui.with_layout(
+                                egui::Layout::right_to_left(egui::Align::Center),
+                                |ui| {
+                                    if ui.small_button("✕").clicked() {
+                                        open = false;
+                                    }
+                                    // Search, as in Web's media sheet.
+                                    let (pill, _) = ui.allocate_exact_size(
+                                        Vec2::new(210.0, 30.0),
+                                        Sense::hover(),
+                                    );
+                                    ui.painter().rect_filled(
+                                        pill,
+                                        CornerRadius::same(15),
+                                        p.input_bg,
+                                    );
+                                    icons::paint(
+                                        ui.painter(),
+                                        Rect::from_center_size(
+                                            egui::pos2(pill.left() + 16.0, pill.center().y),
+                                            Vec2::splat(15.0),
+                                        ),
+                                        Icon::Search,
+                                        p.text_muted,
+                                        1.5,
+                                    );
+                                    let field = Rect::from_min_max(
+                                        egui::pos2(pill.left() + 28.0, pill.top() + 6.0),
+                                        egui::pos2(pill.right() - 10.0, pill.bottom() - 6.0),
+                                    );
+                                    ui.put(
+                                        field,
+                                        egui::TextEdit::singleline(&mut self.wa_media_query)
+                                            .id(egui::Id::new("wa-media-search"))
+                                            .hint_text(
+                                                RichText::new("Cari")
+                                                    .font(theme::regular(12.5))
+                                                    .color(p.text_muted),
+                                            )
+                                            .frame(egui::Frame::NONE)
+                                            .desired_width(field.width())
+                                            .font(theme::regular(12.5))
+                                            .text_color(p.text),
+                                    );
+                                },
+                            );
+                        });
+                    });
+                ui.separator();
+                let query = self.wa_media_query.trim().to_lowercase();
+                let titles: HashMap<String, String> = self
+                    .chats
+                    .iter()
+                    .chain(self.wa_channels.iter())
+                    .map(|c| (c.id.clone(), c.title.clone()))
+                    .collect();
+                let rows: Vec<Message> = match self.wa_media_tab {
+                    1 => self
+                        .wa_media
+                        .iter()
+                        .filter(|m| {
+                            m.media
+                                .as_deref()
+                                .and_then(MediaRef::parse)
+                                .is_some_and(|media| media.kind == "document")
+                        })
+                        .cloned()
+                        .collect(),
+                    2 => self.wa_links.clone(),
+                    _ => self
+                        .wa_media
+                        .iter()
+                        .filter(|m| {
+                            m.media
+                                .as_deref()
+                                .and_then(MediaRef::parse)
+                                .is_some_and(|media| media.kind != "document")
+                        })
+                        .cloned()
+                        .collect(),
+                }
+                .into_iter()
+                .filter(|m| {
+                    query.is_empty()
+                        || titles
+                            .get(&m.chat_id)
+                            .is_some_and(|t| t.to_lowercase().contains(&query))
+                        || m.sender_name.to_lowercase().contains(&query)
+                        || m.body.to_lowercase().contains(&query)
+                })
+                .collect();
+                if rows.is_empty() {
+                    wa_empty(
+                        ui,
+                        &p,
+                        Icon::Image,
+                        "Tidak ada media",
+                        "Lampiran dari obrolan WhatsApp akan muncul di sini.",
+                    );
+                    return;
+                }
+                ScrollArea::vertical()
+                    .auto_shrink([false, false])
+                    .show(ui, |ui| {
+                        if self.wa_media_tab == 2 {
+                            for message in rows {
+                                let title = titles
+                                    .get(&message.chat_id)
+                                    .cloned()
+                                    .unwrap_or_else(|| message.sender_name.clone());
+                                if wa_link_row(ui, &p, &title, &message.body, message.at) {
+                                    if let Some(url) = first_url(&message.body) {
+                                        widgets::open_url(&url);
+                                    }
+                                }
+                            }
+                        } else {
+                            ui.horizontal_wrapped(|ui| {
+                                for message in rows {
+                                    let title = titles
+                                        .get(&message.chat_id)
+                                        .cloned()
+                                        .unwrap_or_else(|| message.sender_name.clone());
+                                    let Some(media) = self.media_of(&message) else {
+                                        continue;
+                                    };
+                                    let key = message_key(&message);
+                                    let thumb = media
+                                        .thumb
+                                        .as_deref()
+                                        .and_then(|raw| self.media_thumb(ui.ctx(), &key, raw));
+                                    let local = self.media_local(&message);
+                                    let texture = match (&thumb, &local) {
+                                        (Some(texture), _) => Some(texture.clone()),
+                                        (None, Some(path)) => self.media_texture(ui.ctx(), path),
+                                        _ => None,
+                                    };
+                                    let (rect, resp) = ui.allocate_exact_size(
+                                        Vec2::new(168.0, 118.0),
+                                        Sense::click(),
+                                    );
+                                    ui.painter().rect_filled(
+                                        rect,
+                                        CornerRadius::same(6),
+                                        p.input_bg,
+                                    );
+                                    if let Some(texture) = &texture {
+                                        let size = texture.size_vec2();
+                                        let scale =
+                                            (rect.width() / size.x).min(rect.height() / size.y);
+                                        egui::Image::new((texture.id(), size * scale)).paint_at(
+                                            ui,
+                                            Rect::from_center_size(rect.center(), size * scale),
+                                        );
+                                    } else {
+                                        icons::paint(
+                                            ui.painter(),
+                                            Rect::from_center_size(
+                                                rect.center(),
+                                                Vec2::splat(28.0),
+                                            ),
+                                            Icon::Image,
+                                            p.text_muted,
+                                            1.4,
+                                        );
+                                    }
+                                    if resp.hovered() {
+                                        ui.painter().rect_filled(
+                                            Rect::from_min_max(
+                                                egui::pos2(rect.left(), rect.bottom() - 22.0),
+                                                rect.right_bottom(),
+                                            ),
+                                            CornerRadius {
+                                                nw: 0,
+                                                ne: 0,
+                                                sw: 6,
+                                                se: 6,
+                                            },
+                                            Color32::from_black_alpha(150),
+                                        );
+                                        ui.painter().text(
+                                            rect.left_bottom() + Vec2::new(6.0, -11.0),
+                                            egui::Align2::LEFT_CENTER,
+                                            &title,
+                                            theme::regular(10.5),
+                                            Color32::WHITE,
+                                        );
+                                        ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
+                                    }
+                                    if resp.clicked() {
+                                        match local {
+                                            Some(path) => {
+                                                if let Some(texture) =
+                                                    self.media_texture(ui.ctx(), &path)
+                                                {
+                                                    self.media_view = Some((texture, path));
+                                                }
+                                            }
+                                            None => {
+                                                self.request_media(&message);
+                                                self.notify("Mengunduh media…");
+                                            }
+                                        }
+                                    }
+                                }
+                            });
+                        }
+                    });
+            });
+        if !open {
+            self.wa_modal = None;
+        }
+    }
+
+    fn wa_advertise_sheet(&mut self, ctx: &egui::Context) {
+        let p = theme::service_palette(self.mode, Service::WhatsApp);
+        if modal_backdrop(ctx) {
+            self.wa_modal = None;
+            return;
+        }
+        let mut open = true;
+        egui::Window::new("wa-advertise")
+            .id(egui::Id::new("wa-advertise"))
+            .order(egui::Order::Foreground)
+            .title_bar(false)
+            .collapsible(false)
+            .resizable(false)
+            .fixed_size(Vec2::new(520.0, 540.0))
+            .anchor(egui::Align2::CENTER_CENTER, Vec2::ZERO)
+            .frame(
+                Frame::new()
+                    .fill(p.panel)
+                    .corner_radius(16)
+                    .stroke(Stroke::new(1.0, p.divider))
+                    .inner_margin(Margin::same(24)),
+            )
+            .show(ctx, |ui| {
+                ui.vertical_centered(|ui| {
+                    let (rect, _) = ui.allocate_exact_size(Vec2::new(150.0, 92.0), Sense::hover());
+                    // Web's illustration: a tilted ad card with a pin, ruled
+                    // lines and a green chat bubble on the corner.
+                    let c = rect.center() + Vec2::new(-8.0, 0.0);
+                    let angle = -0.18f32;
+                    let rot = |x: f32, y: f32| {
+                        c + Vec2::new(
+                            x * angle.cos() - y * angle.sin(),
+                            x * angle.sin() + y * angle.cos(),
+                        )
+                    };
+                    let card = vec![
+                        rot(-46.0, -30.0),
+                        rot(46.0, -30.0),
+                        rot(46.0, 30.0),
+                        rot(-46.0, 30.0),
+                    ];
+                    ui.painter().add(egui::Shape::convex_polygon(
+                        card.clone(),
+                        Color32::from_rgb(0xf3, 0xed, 0xdf),
+                        Stroke::NONE,
+                    ));
+                    ui.painter().add(egui::Shape::closed_line(
+                        card,
+                        Stroke::new(1.0, Color32::from_rgb(0xc9, 0xc2, 0xb0)),
+                    ));
+                    icons::paint(
+                        ui.painter(),
+                        Rect::from_center_size(rot(-24.0, -8.0), Vec2::splat(24.0)),
+                        Icon::Pin,
+                        Color32::from_rgb(0x1f, 0x2c, 0x33),
+                        1.8,
+                    );
+                    for (index, width) in [24.0f32, 18.0, 28.0].into_iter().enumerate() {
+                        let y = 4.0 + index as f32 * 7.0;
+                        ui.painter().line_segment(
+                            [rot(-4.0, y), rot(-4.0 + width, y)],
+                            Stroke::new(2.0, Color32::from_rgb(0xd6, 0xcf, 0xbe)),
+                        );
+                    }
+                    let bubble = c + Vec2::new(46.0, 28.0);
+                    ui.painter()
+                        .circle_filled(bubble, 20.0, Color32::from_rgb(0x25, 0xd3, 0x66));
+                    icons::paint(
+                        ui.painter(),
+                        Rect::from_center_size(bubble, Vec2::splat(20.0)),
+                        Icon::Chat,
+                        Color32::WHITE,
+                        1.8,
+                    );
+                    ui.add_space(8.0);
+                    ui.label(
+                        RichText::new("Dapatkan pelanggan baru melalui iklan Facebook & Instagram")
+                            .font(theme::semibold(18.0))
+                            .color(p.text),
+                    );
+                    ui.add_space(8.0);
+                    ui.label(
+                        RichText::new(
+                            "Buat iklan yang ditampilkan di Facebook & Instagram dengan mudah \
+                             dan ajak orang-orang chat dengan Anda di WhatsApp.",
+                        )
+                        .font(theme::regular(12.5))
+                        .color(p.text_muted),
+                    );
+                });
+                ui.add_space(16.0);
+                for (icon, text) in [
+                    (Icon::Pin, "Jangkau pelanggan lokal"),
+                    (Icon::Tray, "Kendalikan anggaran iklan Anda"),
+                    (Icon::Status, "Jeda atau hentikan iklan kapan saja"),
+                ] {
+                    ui.horizontal(|ui| {
+                        let (rect, _) = ui.allocate_exact_size(Vec2::splat(28.0), Sense::hover());
+                        icons::paint(
+                            ui.painter(),
+                            Rect::from_center_size(rect.center(), Vec2::splat(18.0)),
+                            icon,
+                            p.text_muted,
+                            1.5,
+                        );
+                        ui.label(RichText::new(text).font(theme::regular(13.0)).color(p.text));
+                    });
+                    ui.add_space(6.0);
+                }
+                ui.add_space(10.0);
+                ui.horizontal_wrapped(|ui| {
+                    ui.spacing_mut().item_spacing.x = 3.0;
+                    ui.label(
+                        RichText::new(
+                            "Nama dan foto bisnis Anda akan dibagikan dengan Meta untuk \
+                             membuat iklan.",
+                        )
+                        .font(theme::regular(11.5))
+                        .color(p.text_muted),
+                    );
+                    if ui
+                        .link(
+                            RichText::new("Pelajari selengkapnya")
+                                .font(theme::regular(11.5))
+                                .color(p.accent),
+                        )
+                        .clicked()
+                    {
+                        widgets::open_url("https://www.facebook.com/business/ads");
+                    }
+                });
+                ui.add_space(18.0);
+                ui.horizontal(|ui| {
+                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                        if ui
+                            .add(
+                                egui::Button::new(
+                                    RichText::new("Lanjutkan di Facebook")
+                                        .font(theme::medium(12.5))
+                                        .color(Color32::BLACK),
+                                )
+                                .fill(Color32::WHITE)
+                                .corner_radius(18)
+                                .min_size(Vec2::new(160.0, 36.0)),
+                            )
+                            .clicked()
+                        {
+                            widgets::open_url("https://www.facebook.com/business/ads");
+                            open = false;
+                        }
+                        if ui
+                            .add(
+                                egui::Button::new(
+                                    RichText::new("Batal")
+                                        .font(theme::medium(12.5))
+                                        .color(p.accent),
+                                )
+                                .fill(Color32::TRANSPARENT)
+                                .corner_radius(18)
+                                .min_size(Vec2::new(72.0, 36.0)),
+                            )
+                            .clicked()
+                        {
+                            open = false;
+                        }
+                    });
+                });
+            });
+        if !open {
+            self.wa_modal = None;
+        }
+    }
+
+    // -------------------------------------------------------------- Telegram
+
+    fn tg_name(&self) -> String {
+        self.adapters
+            .get(&Service::Telegram)
+            .map(|a| a.label())
+            .filter(|l| !l.is_empty())
+            .unwrap_or_else(|| "Telegram".to_string())
+    }
+
+    fn tg_id(&self) -> String {
+        self.chats
+            .iter()
+            .find(|c| c.service == Service::Telegram)
+            .map(|c| c.account.0.trim_start_matches("telegram:").to_string())
+            .filter(|id| !id.is_empty())
+            .unwrap_or_else(|| "—".to_string())
+    }
+
+    fn tg_open(&mut self, section: TgSection) {
+        self.tg_section = section;
+        self.tg_drawer = false;
+        self.tg_more = false;
+        self.search.clear();
+        if section == TgSection::Contacts {
+            self.tg_contacts = self
+                .store
+                .contacts("telegram:me")
+                .unwrap_or_default()
+                .into_iter()
+                .collect();
+            self.tg_contacts.sort_by(|a, b| a.1.cmp(&b.1));
+        }
+    }
+
+    /// Telegram Web A's floating left column: a rounded card on the wallpaper,
+    /// with the hamburger drawer painted over the chat list.
+    fn tg_column(&mut self, ui: &mut egui::Ui) {
+        let p = theme::service_palette(self.mode, Service::Telegram);
+        egui::Panel::left("tg-column")
+            .exact_size(406.0)
+            .frame(Frame::new().fill(p.chat_bg))
+            .show(ui, |ui| {
+                let full = ui.max_rect();
+                let card =
+                    Rect::from_min_max(full.min + Vec2::splat(16.0), full.max - Vec2::splat(16.0));
+                // Telegram's card sits a few pixels above the wallpaper, so it
+                // casts a soft shadow instead of a hairline.
+                ui.painter().rect_filled(
+                    card.translate(Vec2::new(0.0, 2.0)).expand(2.0),
+                    CornerRadius::same(18),
+                    Color32::from_black_alpha(70),
+                );
+                ui.painter()
+                    .rect_filled(card, CornerRadius::same(16), p.panel);
+                ui.scope_builder(egui::UiBuilder::new().max_rect(card), |ui| {
+                    ui.set_clip_rect(card);
+                    match self.tg_section {
+                        TgSection::Contacts => self.tg_contacts_pane(ui, &p),
+                        TgSection::Settings => self.tg_settings_pane(ui, &p),
+                        _ => self.tg_chats_pane(ui, &p),
+                    }
+                    if self.tg_drawer {
+                        self.tg_drawer_pane(ui, &p);
+                    }
+                });
+            });
+    }
+
+    fn tg_chats_pane(&mut self, ui: &mut egui::Ui, p: &Palette) {
+        Frame::new()
+            .inner_margin(Margin::symmetric(12, 12))
+            .show(ui, |ui| {
+                ui.horizontal(|ui| {
+                    if tg_button(
+                        ui,
+                        &mut self.tg_textures,
+                        icons::TgIcon::Hamburger,
+                        40.0,
+                        24.0,
+                        p.text,
+                    )
+                    .clicked()
+                    {
+                        self.tg_drawer = !self.tg_drawer;
+                        self.tg_more = false;
+                    }
+                    ui.add_space(12.0);
+                    let width = ui.available_width().max(120.0);
+                    self.tg_search_box(ui, p, "Search", width);
+                });
+            });
+        ui.add_space(4.0);
+        let query = self.search.trim().to_lowercase();
+        let mut rows: Vec<Chat> = self
+            .chats
+            .iter()
+            .filter(|c| {
+                let archived = self
+                    .chat_flags
+                    .get(&(c.account.0.clone(), c.id.clone()))
+                    .is_some_and(|flags| flags.1);
+                !archived
+                    && (query.is_empty()
+                        || c.title.to_lowercase().contains(&query)
+                        || c.preview.to_lowercase().contains(&query))
+            })
+            .cloned()
+            .collect();
+        let pinned = |c: &Chat| {
+            self.chat_flags
+                .get(&(c.account.0.clone(), c.id.clone()))
+                .is_some_and(|flags| flags.0)
+        };
+        rows.sort_by(|a, b| pinned(b).cmp(&pinned(a)));
+        let active = self.active_chat.get(&Service::Telegram).cloned();
+        let mut open = None;
+        ScrollArea::vertical()
+            .id_salt("tg-chats")
+            .auto_shrink([false, false])
+            .show(ui, |ui| {
+                ui.add_space(8.0);
+                for chat in &rows {
+                    let selected = active
+                        .as_ref()
+                        .is_some_and(|(a, id)| *a == chat.account.0 && *id == chat.id);
+                    let flags = self
+                        .chat_flags
+                        .get(&(chat.account.0.clone(), chat.id.clone()))
+                        .copied()
+                        .unwrap_or((false, false));
+                    if self
+                        .tg_chat_row(ui, p, chat, selected, flags.0, flags.1)
+                        .clicked()
+                    {
+                        open = Some(chat.clone());
+                    }
+                }
+                if rows.is_empty() {
+                    ui.add_space(80.0);
+                    ui.vertical_centered(|ui| {
+                        ui.label(
+                            RichText::new("No chats yet")
+                                .font(theme::medium(14.0))
+                                .color(p.text_muted),
+                        );
+                    });
+                }
+                ui.add_space(8.0);
+            });
+        if let Some(chat) = open {
+            self.tg_section = TgSection::Chats;
+            self.open_chat(chat);
+        }
+    }
+
+    fn tg_search_box(&mut self, ui: &mut egui::Ui, p: &Palette, hint: &str, width: f32) {
+        tg_search_box(ui, &mut self.tg_textures, p, &mut self.search, hint, width);
+    }
+
+    /// One Telegram chat row: 54px avatar, two 16px lines and the blue badge.
+    fn tg_chat_row(
+        &mut self,
+        ui: &mut egui::Ui,
+        p: &Palette,
+        chat: &Chat,
+        selected: bool,
+        pinned: bool,
+        muted: bool,
+    ) -> egui::Response {
+        let width = ui.available_width();
+        let (rect, resp) = ui.allocate_exact_size(Vec2::new(width, 72.0), Sense::click());
+        if selected {
+            ui.painter()
+                .rect_filled(rect, CornerRadius::same(10), p.selected);
+        } else if resp.hovered() {
+            ui.painter()
+                .rect_filled(rect, CornerRadius::same(10), p.hover);
+        }
+        let picture = self.avatar_texture(ui.ctx(), chat.avatar.as_deref());
+        wa_avatar(
+            ui,
+            p,
+            egui::pos2(rect.left() + 36.0, rect.center().y),
+            54.0,
+            &chat.title,
+            picture.as_ref(),
+            None,
+        );
+        let text_x = rect.left() + 71.0;
+        let time = if chat.last_at > 0 {
+            format::clock(chat.last_at)
+        } else {
+            String::new()
+        };
+        let time_w = ui
+            .painter()
+            .layout_no_wrap(time.clone(), theme::regular(12.0), p.text_muted)
+            .size()
+            .x;
+        let mut title_x = text_x;
+        if pinned {
+            self.tg_textures.paint(
+                ui.ctx(),
+                ui.painter(),
+                Rect::from_min_size(egui::pos2(title_x, rect.top() + 14.0), Vec2::splat(14.0)),
+                icons::TgIcon::Pin,
+                p.text_muted,
+            );
+            title_x += 18.0;
+        }
+        if muted {
+            self.tg_textures.paint(
+                ui.ctx(),
+                ui.painter(),
+                Rect::from_min_size(egui::pos2(title_x, rect.top() + 14.0), Vec2::splat(14.0)),
+                icons::TgIcon::Muted,
+                p.text_muted,
+            );
+            title_x += 18.0;
+        }
+        let title_room = (rect.right() - 10.0 - time_w - 8.0 - title_x).max(20.0);
+        ui.painter().text(
+            egui::pos2(title_x, rect.top() + 21.0),
+            egui::Align2::LEFT_CENTER,
+            elide(&chat.title, title_room, 15.0),
+            theme::medium(15.0),
+            p.text,
+        );
+        if !time.is_empty() {
+            ui.painter().text(
+                egui::pos2(rect.right() - 10.0, rect.top() + 21.0),
+                egui::Align2::RIGHT_CENTER,
+                time,
+                theme::regular(12.0),
+                p.text_muted,
+            );
+        }
+        let preview = chat.preview.replace('\n', " ");
+        let room =
+            (rect.right() - 10.0 - text_x - if chat.unread > 0 { 30.0 } else { 0.0 }).max(20.0);
+        ui.painter().text(
+            egui::pos2(text_x, rect.top() + 45.0),
+            egui::Align2::LEFT_CENTER,
+            elide(&preview, room, 13.5),
+            theme::regular(13.5),
+            p.text_muted,
+        );
+        if chat.unread > 0 {
+            let badge = Rect::from_center_size(
+                egui::pos2(rect.right() - 22.0, rect.top() + 52.0),
+                Vec2::new(24.0, 20.0),
+            );
+            ui.painter()
+                .rect_filled(badge, CornerRadius::same(10), p.accent);
+            ui.painter().text(
+                badge.center(),
+                egui::Align2::CENTER_CENTER,
+                if chat.unread > 99 {
+                    "99+".to_string()
+                } else {
+                    chat.unread.to_string()
+                },
+                theme::semibold(11.0),
+                Color32::WHITE,
+            );
+        }
+        if resp.hovered() {
+            ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
+        }
+        resp
+    }
+
+    fn tg_drawer_pane(&mut self, ui: &mut egui::Ui, p: &Palette) {
+        let full = ui.max_rect();
+        let catcher = ui.interact(full, ui.id().with("tg-drawer-catcher"), Sense::click());
+        if catcher.clicked() || ui.input(|i| i.key_pressed(egui::Key::Escape)) {
+            self.tg_drawer = false;
+            self.tg_more = false;
+            return;
+        }
+        // Exact height: the auto-sized Frame kept growing to the scope's
+        // height, leaving a long empty tail under the last item. More opens a
+        // second card to the right, as Web A does, so this one never grows.
+        let drawer_h: f32 = 260.0_f32.min(full.height() - 60.0);
+        let drawer =
+            Rect::from_min_size(full.min + Vec2::new(29.0, 60.0), Vec2::new(216.0, drawer_h));
+        let mut open = None;
+        let mut night = false;
+        // The drawer floats over the list; the shadow is what separates it,
+        // since Web A paints it in the same #212121 as the card.
+        for (offset, alpha) in [(6.0, 40), (3.0, 60)] {
+            ui.painter().rect_filled(
+                drawer.translate(Vec2::new(0.0, offset)),
+                CornerRadius::same(18),
+                Color32::from_black_alpha(alpha),
+            );
+        }
+        ui.painter()
+            .rect_filled(drawer, CornerRadius::same(16), p.hover);
+        ui.painter().rect_stroke(
+            drawer,
+            CornerRadius::same(16),
+            Stroke::new(1.0, p.divider),
+            egui::StrokeKind::Inside,
+        );
+        ui.scope_builder(egui::UiBuilder::new().max_rect(drawer.shrink(4.0)), |ui| {
+            ui.spacing_mut().item_spacing.y = 0.0;
+            ui.set_width(208.0);
+            let (row, resp) = ui.allocate_exact_size(Vec2::new(208.0, 40.0), Sense::click());
+            if resp.hovered() {
+                ui.painter()
+                    .rect_filled(row, CornerRadius::same(8), p.hover);
+            }
+            let picture = None;
+            wa_avatar(
+                ui,
+                p,
+                egui::pos2(row.left() + 18.0, row.center().y),
+                26.0,
+                &self.tg_name(),
+                picture,
+                None,
+            );
+            ui.painter().text(
+                egui::pos2(row.left() + 38.0, row.center().y),
+                egui::Align2::LEFT_CENTER,
+                self.tg_name(),
+                theme::medium(14.0),
+                p.text,
+            );
+            if resp.clicked() {
+                open = Some(TgSection::Profile);
+            }
+            ui.add_space(4.0);
+            let line = ui.available_width();
+            let (bar, _) = ui.allocate_exact_size(Vec2::new(line, 9.0), Sense::hover());
+            ui.painter().hline(
+                bar.x_range().shrink(8.0),
+                bar.center().y,
+                Stroke::new(1.0, p.divider),
+            );
+            // A macro keeps the shared drawer row inline; a closure
+            // would hold `ui` and `tg_textures` borrowed for the whole
+            // menu.
+            macro_rules! item {
+                ($icon:expr, $label:expr, $section:expr, $active:expr) => {{
+                    if tg_menu_item(ui, &mut self.tg_textures, p, $icon, $label, $active) {
+                        open = Some($section);
+                    }
+                }};
+            }
+            item!(
+                icons::TgIcon::Add,
+                "Add Account",
+                TgSection::Info(TgInfo::AddAccount),
+                false
+            );
+            item!(
+                icons::TgIcon::User,
+                "My Profile",
+                TgSection::Profile,
+                matches!(self.tg_section, TgSection::Profile)
+            );
+            item!(
+                icons::TgIcon::SavedMessages,
+                "Saved Messages",
+                TgSection::Info(TgInfo::Saved),
+                false
+            );
+            item!(
+                icons::TgIcon::Group,
+                "Contacts",
+                TgSection::Contacts,
+                matches!(self.tg_section, TgSection::Contacts)
+            );
+            item!(
+                icons::TgIcon::Settings,
+                "Settings",
+                TgSection::Settings,
+                matches!(self.tg_section, TgSection::Settings)
+            );
+            let more = tg_menu_item(
+                ui,
+                &mut self.tg_textures,
+                p,
+                icons::TgIcon::More,
+                "More",
+                self.tg_more,
+            );
+            if more {
+                self.tg_more = !self.tg_more;
+            }
+        });
+        if self.tg_more {
+            // Second popup, top-aligned with the More row. It floats over the
+            // chat list, so it is an Area rather than part of the drawer.
+            let at = egui::pos2(drawer.right() + 6.0, drawer.top() + 217.0);
+            let mut pick = None;
+            egui::Area::new(egui::Id::new("tg-more-menu"))
+                .order(egui::Order::Foreground)
+                .fixed_pos(at)
+                .show(ui.ctx(), |ui| {
+                    for (offset, alpha) in [(6.0, 40), (3.0, 60)] {
+                        ui.painter().rect_filled(
+                            Rect::from_min_size(
+                                at + Vec2::new(0.0, offset),
+                                Vec2::new(216.0, 238.0),
+                            ),
+                            CornerRadius::same(18),
+                            Color32::from_black_alpha(alpha),
+                        );
+                    }
+                    Frame::new()
+                        .fill(p.hover)
+                        .stroke(Stroke::new(1.0, p.divider))
+                        .corner_radius(16)
+                        .inner_margin(Margin::symmetric(4, 4))
+                        .show(ui, |ui| {
+                            ui.spacing_mut().item_spacing.y = 0.0;
+                            ui.set_width(208.0);
+                            if tg_menu_toggle(
+                                ui,
+                                &mut self.tg_textures,
+                                p,
+                                icons::TgIcon::Darkmode,
+                                if self.mode == Mode::Dark {
+                                    "Night Mode"
+                                } else {
+                                    "Day Mode"
+                                },
+                                self.mode == Mode::Dark,
+                            ) {
+                                night = true;
+                            }
+                            if tg_menu_item(
+                                ui,
+                                &mut self.tg_textures,
+                                p,
+                                icons::TgIcon::Animations,
+                                "UI Features",
+                                false,
+                            ) {
+                                pick = Some(TgSection::Info(TgInfo::UiFeatures));
+                            }
+                            let line = ui.available_width();
+                            let (bar, _) =
+                                ui.allocate_exact_size(Vec2::new(line, 7.0), Sense::hover());
+                            ui.painter().hline(
+                                bar.x_range().shrink(8.0),
+                                bar.center().y,
+                                Stroke::new(1.0, p.divider),
+                            );
+                            if tg_menu_item(
+                                ui,
+                                &mut self.tg_textures,
+                                p,
+                                icons::TgIcon::Help,
+                                "Telegram Features",
+                                false,
+                            ) {
+                                pick = Some(TgSection::Info(TgInfo::Features));
+                            }
+                            if tg_menu_item(
+                                ui,
+                                &mut self.tg_textures,
+                                p,
+                                icons::TgIcon::Bug,
+                                "Report a Bug",
+                                false,
+                            ) {
+                                pick = Some(TgSection::Info(TgInfo::Bug));
+                            }
+                            if tg_menu_item(
+                                ui,
+                                &mut self.tg_textures,
+                                p,
+                                icons::TgIcon::Web,
+                                "Switch to K Version",
+                                false,
+                            ) {
+                                pick = Some(TgSection::Info(TgInfo::KVersion));
+                            }
+                            if tg_menu_item(
+                                ui,
+                                &mut self.tg_textures,
+                                p,
+                                icons::TgIcon::Install,
+                                "Install App",
+                                false,
+                            ) {
+                                pick = Some(TgSection::Info(TgInfo::Install));
+                            }
+                            let (foot, _) =
+                                ui.allocate_exact_size(Vec2::new(208.0, 26.0), Sense::hover());
+                            ui.painter().text(
+                                foot.center(),
+                                egui::Align2::CENTER_CENTER,
+                                "Telegram Web A 13.0.2",
+                                theme::regular(11.0),
+                                p.text_muted,
+                            );
+                        });
+                });
+            if let Some(section) = pick {
+                open = Some(section);
+            }
+        }
+        if night {
+            let value = if self.mode == Mode::Dark {
+                united_core::settings::Theme::Light
+            } else {
+                united_core::settings::Theme::Dark
+            };
+            self.settings.theme = value;
+            self.mode = if value == united_core::settings::Theme::Dark {
+                Mode::Dark
+            } else {
+                Mode::Light
+            };
+            apply_mode(ui.ctx(), self.mode);
+            self.settings.save();
+        }
+        if let Some(section) = open {
+            self.tg_open(section);
+        }
+    }
+
+    fn tg_contacts_pane(&mut self, ui: &mut egui::Ui, p: &Palette) {
+        Frame::new()
+            .inner_margin(Margin::symmetric(12, 12))
+            .show(ui, |ui| {
+                ui.horizontal(|ui| {
+                    if tg_button(
+                        ui,
+                        &mut self.tg_textures,
+                        icons::TgIcon::ArrowLeft,
+                        40.0,
+                        24.0,
+                        p.text,
+                    )
+                    .clicked()
+                    {
+                        self.tg_open(TgSection::Chats);
+                    }
+                    ui.add_space(4.0);
+                    ui.label(
+                        RichText::new("Contacts")
+                            .font(theme::semibold(17.0))
+                            .color(p.text),
+                    );
+                });
+                ui.add_space(6.0);
+                self.tg_search_box(ui, p, "Search contacts", ui.available_width());
+            });
+        let query = self.search.trim().to_lowercase();
+        let mut contacts: Vec<(String, String)> = self
+            .tg_contacts
+            .iter()
+            .filter(|(id, name)| {
+                query.is_empty() || name.to_lowercase().contains(&query) || id.contains(&query)
+            })
+            .cloned()
+            .collect();
+        contacts.sort_by(|a, b| a.1.cmp(&b.1));
+        let mut open_contact = None;
+        ScrollArea::vertical()
+            .id_salt("tg-contacts")
+            .auto_shrink([false, false])
+            .show(ui, |ui| {
+                ui.add_space(4.0);
+                Frame::new()
+                    .inner_margin(Margin::symmetric(8, 0))
+                    .show(ui, |ui| {
+                        let (rect, resp) = ui.allocate_exact_size(
+                            Vec2::new(ui.available_width(), 56.0),
+                            Sense::click(),
+                        );
+                        if resp.hovered() {
+                            ui.painter()
+                                .rect_filled(rect, CornerRadius::same(10), p.hover);
+                        }
+                        ui.painter().circle_filled(
+                            egui::pos2(rect.left() + 28.0, rect.center().y),
+                            18.0,
+                            p.accent,
+                        );
+                        self.tg_textures.paint(
+                            ui.ctx(),
+                            ui.painter(),
+                            Rect::from_center_size(
+                                egui::pos2(rect.left() + 28.0, rect.center().y),
+                                Vec2::splat(20.0),
+                            ),
+                            icons::TgIcon::AddUser,
+                            Color32::WHITE,
+                        );
+                        ui.painter().text(
+                            egui::pos2(rect.left() + 56.0, rect.center().y),
+                            egui::Align2::LEFT_CENTER,
+                            "New Contact",
+                            theme::medium(14.0),
+                            p.accent,
+                        );
+                        if resp.clicked() {
+                            open_contact = Some(String::new());
+                        }
+                    });
+                for (id, name) in &contacts {
+                    Frame::new()
+                        .inner_margin(Margin::symmetric(8, 0))
+                        .show(ui, |ui| {
+                            let (rect, resp) = ui.allocate_exact_size(
+                                Vec2::new(ui.available_width(), 56.0),
+                                Sense::click(),
+                            );
+                            if resp.hovered() {
+                                ui.painter()
+                                    .rect_filled(rect, CornerRadius::same(10), p.hover);
+                            }
+                            wa_avatar(
+                                ui,
+                                p,
+                                egui::pos2(rect.left() + 28.0, rect.center().y),
+                                40.0,
+                                name,
+                                None,
+                                None,
+                            );
+                            ui.painter().text(
+                                egui::pos2(rect.left() + 56.0, rect.center().y - 8.0),
+                                egui::Align2::LEFT_CENTER,
+                                elide(name, rect.width() - 70.0, 14.0),
+                                theme::regular(14.0),
+                                p.text,
+                            );
+                            ui.painter().text(
+                                egui::pos2(rect.left() + 56.0, rect.center().y + 10.0),
+                                egui::Align2::LEFT_CENTER,
+                                elide(id, rect.width() - 70.0, 11.5),
+                                theme::regular(11.5),
+                                p.text_muted,
+                            );
+                            if resp.clicked() {
+                                open_contact = Some(id.clone());
+                            }
+                        });
+                }
+                if contacts.is_empty() {
+                    ui.add_space(60.0);
+                    ui.vertical_centered(|ui| {
+                        ui.label(
+                            RichText::new("No contacts synced")
+                                .font(theme::medium(14.0))
+                                .color(p.text_muted),
+                        );
+                    });
+                }
+                ui.add_space(8.0);
+            });
+        if let Some(id) = open_contact {
+            if id.is_empty() {
+                self.tg_open(TgSection::Info(TgInfo::NewContact));
+            } else {
+                self.tg_contact = Some(id);
+            }
+        }
+    }
+
+    fn tg_settings_pane(&mut self, ui: &mut egui::Ui, p: &Palette) {
+        Frame::new()
+            .inner_margin(Margin::symmetric(12, 12))
+            .show(ui, |ui| {
+                ui.horizontal(|ui| {
+                    if tg_button(
+                        ui,
+                        &mut self.tg_textures,
+                        icons::TgIcon::ArrowLeft,
+                        40.0,
+                        24.0,
+                        p.text,
+                    )
+                    .clicked()
+                    {
+                        self.tg_open(TgSection::Chats);
+                    }
+                    ui.add_space(4.0);
+                    ui.label(
+                        RichText::new("Settings")
+                            .font(theme::semibold(17.0))
+                            .color(p.text),
+                    );
+                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                        let _ = tg_button(
+                            ui,
+                            &mut self.tg_textures,
+                            icons::TgIcon::More,
+                            32.0,
+                            18.0,
+                            p.text_muted,
+                        );
+                        let _ = tg_button(
+                            ui,
+                            &mut self.tg_textures,
+                            icons::TgIcon::Edit,
+                            32.0,
+                            18.0,
+                            p.text_muted,
+                        );
+                    });
+                });
+                ui.add_space(6.0);
+                self.tg_search_box(ui, p, "Search settings", ui.available_width());
+            });
+        ScrollArea::vertical()
+            .id_salt("tg-settings")
+            .auto_shrink([false, false])
+            .show(ui, |ui| {
+                ui.add_space(10.0);
+                ui.vertical_centered(|ui| {
+                    let picture = None;
+                    wa_avatar(
+                        ui,
+                        p,
+                        ui.cursor().min + Vec2::new(ui.available_width() / 2.0, 54.0),
+                        108.0,
+                        &self.tg_name(),
+                        picture,
+                        None,
+                    );
+                    ui.add_space(112.0);
+                    ui.label(
+                        RichText::new(self.tg_name())
+                            .font(theme::semibold(20.0))
+                            .color(p.text),
+                    );
+                    ui.label(
+                        RichText::new("online")
+                            .font(theme::regular(13.0))
+                            .color(p.text_muted),
+                    );
+                });
+                ui.add_space(14.0);
+                Frame::new()
+                    .inner_margin(Margin::symmetric(10, 0))
+                    .show(ui, |ui| {
+                        let query = self.search.trim().to_lowercase();
+                        let rows: [(TgSettingsTab, icons::TgIcon, Color32, &str, &str); 8] = [
+                            (
+                                TgSettingsTab::Account,
+                                icons::TgIcon::User,
+                                Color32::from_rgb(0x33, 0x90, 0xec),
+                                "Account",
+                                "ID, username, bio",
+                            ),
+                            (
+                                TgSettingsTab::General,
+                                icons::TgIcon::Settings,
+                                Color32::from_rgb(0xe0, 0xa1, 0x3a),
+                                "General Settings",
+                                "Wallpaper, theme, keyboard",
+                            ),
+                            (
+                                TgSettingsTab::Notifications,
+                                icons::TgIcon::Notifications,
+                                Color32::from_rgb(0xe5, 0x53, 0x4b),
+                                "Notifications",
+                                "Sounds, badges",
+                            ),
+                            (
+                                TgSettingsTab::Privacy,
+                                icons::TgIcon::Lock,
+                                Color32::from_rgb(0x3a, 0x9e, 0x9a),
+                                "Privacy and Security",
+                                "Last seen, blocked users",
+                            ),
+                            (
+                                TgSettingsTab::Data,
+                                icons::TgIcon::Folder,
+                                Color32::from_rgb(0x4f, 0xae, 0x4e),
+                                "Data and Storage",
+                                "Network, media cache",
+                            ),
+                            (
+                                TgSettingsTab::Devices,
+                                icons::TgIcon::Devices,
+                                Color32::from_rgb(0x8b, 0x6e, 0xe8),
+                                "Devices",
+                                "Active sessions",
+                            ),
+                            (
+                                TgSettingsTab::Language,
+                                icons::TgIcon::Language,
+                                Color32::from_rgb(0x33, 0x90, 0xec),
+                                "Language",
+                                "English",
+                            ),
+                            (
+                                TgSettingsTab::Stickers,
+                                icons::TgIcon::Stickers,
+                                Color32::from_rgb(0xe0, 0xa1, 0x3a),
+                                "Stickers and Emoji",
+                                "Masks, animated",
+                            ),
+                        ];
+                        for (tab, icon, color, title, subtitle) in rows {
+                            if !query.is_empty() && !title.to_lowercase().contains(&query) {
+                                continue;
+                            }
+                            if tg_settings_row(
+                                ui,
+                                &mut self.tg_textures,
+                                p,
+                                icon,
+                                color,
+                                title,
+                                subtitle,
+                                self.tg_settings_tab == tab,
+                            ) {
+                                self.tg_settings_tab = tab;
+                                self.tg_section = TgSection::Settings;
+                            }
+                        }
+                    });
+                ui.add_space(16.0);
+            });
+    }
+
+    fn tg_detail(&mut self, ui: &mut egui::Ui) {
+        let p = theme::service_palette(self.mode, Service::Telegram);
+        egui::CentralPanel::default()
+            .frame(Frame::new().fill(p.chat_bg))
+            .show(ui, |ui| match self.tg_section {
+                TgSection::Contacts => self.tg_contact_detail(ui, &p),
+                TgSection::Settings => self.tg_settings_detail(ui, &p),
+                TgSection::Profile => self.tg_profile_detail(ui, &p),
+                TgSection::Info(kind) => self.tg_info_detail(ui, &p, kind),
+                TgSection::Chats => {}
+            });
+    }
+
+    fn tg_contact_detail(&mut self, ui: &mut egui::Ui, p: &Palette) {
+        let Some(id) = self.tg_contact.clone() else {
+            tg_placeholder(ui, p, "Select a contact to see their profile.");
+            return;
+        };
+        let name = self
+            .tg_contacts
+            .iter()
+            .find(|(contact, _)| *contact == id)
+            .map(|(_, name)| name.clone())
+            .unwrap_or_else(|| id.clone());
+        let mut message = false;
+        tg_detail_frame(ui, p, |ui| {
+            let picture = None;
+            wa_avatar(
+                ui,
+                p,
+                ui.cursor().min + Vec2::new(ui.available_width() / 2.0, 54.0),
+                108.0,
+                &name,
+                picture,
+                None,
+            );
+            ui.add_space(112.0);
+            ui.label(
+                RichText::new(&name)
+                    .font(theme::semibold(21.0))
+                    .color(p.text),
+            );
+            ui.label(
+                RichText::new("Telegram contact")
+                    .font(theme::regular(13.0))
+                    .color(p.text_muted),
+            );
+            ui.add_space(18.0);
+            tg_fact_row(ui, p, "User ID", &id);
+            ui.add_space(10.0);
+            message = tg_pill_button(ui, p, "Send Message");
+        });
+        if message {
+            if let Some(chat) = self.chats.iter().find(|c| c.title == name).cloned() {
+                self.tg_open(TgSection::Chats);
+                self.open_chat(chat);
+            } else {
+                self.toast = Some((format!("No conversation with {name} yet"), Instant::now()));
+            }
+        }
+    }
+
+    fn tg_profile_detail(&mut self, ui: &mut egui::Ui, p: &Palette) {
+        let name = self.tg_name();
+        let id = self.tg_id();
+        tg_detail_frame(ui, p, |ui| {
+            let picture = None;
+            wa_avatar(
+                ui,
+                p,
+                ui.cursor().min + Vec2::new(ui.available_width() / 2.0, 54.0),
+                108.0,
+                &name,
+                picture,
+                None,
+            );
+            ui.add_space(112.0);
+            ui.label(
+                RichText::new(&name)
+                    .font(theme::semibold(21.0))
+                    .color(p.text),
+            );
+            ui.label(
+                RichText::new("online")
+                    .font(theme::regular(13.0))
+                    .color(p.text_muted),
+            );
+            ui.add_space(18.0);
+            tg_fact_row(ui, p, "Telegram ID", &id);
+            tg_fact_row(ui, p, "Username", "Not set");
+            tg_fact_row(ui, p, "Bio", "Not set");
+            tg_fact_row(ui, p, "Session", "MTProto, this install");
+        });
+    }
+
+    fn tg_info_detail(&mut self, ui: &mut egui::Ui, p: &Palette, kind: TgInfo) {
+        let mut back = false;
+        ui.add_space(70.0);
+        ui.vertical_centered(|ui| {
+            Frame::new()
+                .fill(p.header)
+                .corner_radius(14)
+                .inner_margin(Margin::symmetric(24, 22))
+                .show(ui, |ui| {
+                    ui.set_width(280.0);
+                    ui.vertical_centered(|ui| {
+                        let (rect, _) = ui.allocate_exact_size(Vec2::splat(64.0), Sense::hover());
+                        self.tg_textures.paint(
+                            ui.ctx(),
+                            ui.painter(),
+                            Rect::from_center_size(rect.center(), Vec2::splat(52.0)),
+                            kind.icon(),
+                            p.accent,
+                        );
+                        ui.add_space(10.0);
+                        ui.label(
+                            RichText::new(kind.title())
+                                .font(theme::semibold(17.0))
+                                .color(p.text),
+                        );
+                        ui.add_space(8.0);
+                        ui.label(
+                            RichText::new(kind.body())
+                                .font(theme::regular(12.5))
+                                .color(p.text_muted),
+                        );
+                        ui.add_space(16.0);
+                        back = tg_pill_button(ui, p, "Back to Chats");
+                    });
+                });
+        });
+        if back {
+            self.tg_open(TgSection::Chats);
+        }
+    }
+
+    fn tg_settings_detail(&mut self, ui: &mut egui::Ui, p: &Palette) {
+        let title = match self.tg_settings_tab {
+            TgSettingsTab::Account => "Account",
+            TgSettingsTab::General => "General Settings",
+            TgSettingsTab::Notifications => "Notifications",
+            TgSettingsTab::Privacy => "Privacy and Security",
+            TgSettingsTab::Data => "Data and Storage",
+            TgSettingsTab::Devices => "Devices",
+            TgSettingsTab::Language => "Language",
+            TgSettingsTab::Stickers => "Stickers and Emoji",
+        };
+        ScrollArea::vertical()
+            .id_salt("tg-settings-detail")
+            .auto_shrink([false, false])
+            .show(ui, |ui| {
+                ui.add_space(24.0);
+                let avail = ui.available_width();
+                let card_w = 556.0_f32.min((avail - 32.0).max(280.0));
+                ui.horizontal(|ui| {
+                    ui.add_space(((avail - card_w) / 2.0).max(16.0));
+                    ui.vertical(|ui| {
+                        ui.set_width(card_w);
+                        ui.label(
+                            RichText::new(title)
+                                .font(theme::semibold(20.0))
+                                .color(p.text),
+                        );
+                        ui.add_space(12.0);
+                        Frame::new()
+                            .fill(p.header)
+                            .corner_radius(14)
+                            .inner_margin(Margin::symmetric(18, 12))
+                            .show(ui, |ui| {
+                                ui.set_width(card_w - 36.0);
+                                match self.tg_settings_tab {
+                                TgSettingsTab::Account => {
+                                    let name = self.tg_name();
+                                    let id = self.tg_id();
+                                    ui.horizontal(|ui| {
+                                        let picture = None;
+                                        wa_avatar(
+                                            ui,
+                                            p,
+                                            ui.cursor().min + Vec2::new(28.0, 28.0),
+                                            56.0,
+                                            &name,
+                                            picture,
+                                            None,
+                                        );
+                                        ui.add_space(64.0);
+                                        ui.vertical(|ui| {
+                                            ui.label(
+                                                RichText::new(&name)
+                                                    .font(theme::semibold(16.0))
+                                                    .color(p.text),
+                                            );
+                                            ui.label(
+                                                RichText::new("online")
+                                                    .font(theme::regular(12.0))
+                                                    .color(p.text_muted),
+                                            );
+                                        });
+                                    });
+                                    ui.add_space(8.0);
+                                    tg_fact_row(ui, p, "Telegram ID", &id);
+                                    tg_fact_row(ui, p, "Username", "Not set");
+                                    tg_fact_row(ui, p, "Bio", "Not set");
+                                }
+                                TgSettingsTab::General => {
+                                    ui.add_space(6.0);
+                                    ui.label(
+                                        RichText::new("Theme")
+                                            .font(theme::regular(13.0))
+                                            .color(p.text_muted),
+                                    );
+                                    ui.add_space(6.0);
+                                    let current = match self.settings.theme {
+                                        united_core::settings::Theme::System => 0,
+                                        united_core::settings::Theme::Light => 1,
+                                        united_core::settings::Theme::Dark => 2,
+                                    };
+                                    if let Some(picked) =
+                                        widgets::segmented(ui, p, current, &["System", "Light", "Dark"])
+                                    {
+                                        let value = match picked {
+                                            1 => united_core::settings::Theme::Light,
+                                            2 => united_core::settings::Theme::Dark,
+                                            _ => united_core::settings::Theme::System,
+                                        };
+                                        self.settings.theme = value;
+                                        self.mode = match value {
+                                            united_core::settings::Theme::Light => Mode::Light,
+                                            united_core::settings::Theme::Dark => Mode::Dark,
+                                            united_core::settings::Theme::System => {
+                                                detect_system_mode(ui.ctx())
+                                            }
+                                        };
+                                        apply_mode(ui.ctx(), self.mode);
+                                        self.settings.save();
+                                    }
+                                    ui.add_space(10.0);
+                                    tg_fact_row(ui, p, "Chat wallpaper", "Doodle pattern, dark");
+                                    tg_fact_row(ui, p, "Message text size", "Default");
+                                }
+                                TgSettingsTab::Notifications => {
+                                    let mut desktop = self.settings.desktop_notifications;
+                                    if tg_toggle_row(
+                                        ui,
+                                        p,
+                                        "Desktop notifications",
+                                        "Show a system banner when the window is not focused",
+                                        &mut desktop,
+                                    ) {
+                                        self.settings.desktop_notifications = desktop;
+                                        self.settings.save();
+                                    }
+                                    let mut close = self.settings.minimize_on_close;
+                                    if tg_toggle_row(
+                                        ui,
+                                        p,
+                                        "Close to tray",
+                                        "Keep United running when the window closes",
+                                        &mut close,
+                                    ) {
+                                        self.settings.minimize_on_close = close;
+                                        self.settings.save();
+                                    }
+                                    let mut startup = self.settings.launch_at_startup;
+                                    if tg_toggle_row(
+                                        ui,
+                                        p,
+                                        "Launch at startup",
+                                        "Start United with the desktop session",
+                                        &mut startup,
+                                    ) {
+                                        self.settings.launch_at_startup = startup;
+                                        AppSettings::apply_autostart(startup);
+                                        self.settings.save();
+                                    }
+                                }
+                                TgSettingsTab::Privacy => {
+                                    tg_fact_row(ui, p, "Last seen", "Managed by Telegram");
+                                    tg_fact_row(ui, p, "Read receipts", "Sent with every message");
+                                    tg_fact_row(ui, p, "Blocked users", "Manage in Telegram");
+                                    ui.add_space(8.0);
+                                    ui.label(
+                                        RichText::new(
+                                            "These switches live on Telegram's servers; changing them here would not reach the phone.",
+                                        )
+                                        .font(theme::regular(12.0))
+                                        .color(p.text_muted),
+                                    );
+                                }
+                                TgSettingsTab::Data => {
+                                    let chats = self.chats.len();
+                                    let cached: usize = self.messages.values().map(Vec::len).sum();
+                                    tg_fact_row(ui, p, "Chats", &chats.to_string());
+                                    tg_fact_row(ui, p, "Messages in memory", &cached.to_string());
+                                    tg_fact_row(ui, p, "Media cache", "Managed automatically");
+                                }
+                                TgSettingsTab::Devices => {
+                                    tg_fact_row(ui, p, "This device", "United on Linux");
+                                    tg_fact_row(ui, p, "Session", "MTProto, this install");
+                                    tg_fact_row(ui, p, "Other devices", "Not listed by the adapter");
+                                }
+                                TgSettingsTab::Language => {
+                                    tg_fact_row(ui, p, "Interface", "English");
+                                    tg_fact_row(ui, p, "Messages", "As sent");
+                                }
+                                TgSettingsTab::Stickers => {
+                                    tg_fact_row(ui, p, "Stickers", "Rendered as images");
+                                    tg_fact_row(ui, p, "Animated stickers", "First frame only");
+                                    tg_fact_row(ui, p, "Emoji", "System font");
+                                }
+                                }
+                            });
+                        ui.add_space(24.0);
+                    });
+                });
+            });
+    }
+
+    // --------------------------------------------------------------- Discord
+
+    fn dc_open(&mut self, section: DcSection) {
+        self.dc_section = section;
+        self.search.clear();
+    }
+
+    /// Discord's 72px guild rail and 300px DM sidebar, on top of United's
+    /// global rail like the WhatsApp and Telegram columns.
+    fn dc_columns(&mut self, ui: &mut egui::Ui) {
+        let p = theme::service_palette(self.mode, Service::Discord);
+        egui::Panel::left("dc-rail")
+            .exact_size(72.0)
+            .frame(Frame::new().fill(p.panel))
+            .show(ui, |ui| self.dc_rail(ui, &p));
+        egui::Panel::left("dc-sidebar")
+            .exact_size(300.0)
+            .frame(Frame::new().fill(p.panel))
+            .show(ui, |ui| self.dc_sidebar(ui, &p));
+    }
+
+    fn dc_rail(&mut self, ui: &mut egui::Ui, p: &Palette) {
+        let mut go = None;
+        ui.vertical_centered(|ui| {
+            ui.add_space(12.0);
+            if dc_guild_tile(
+                ui,
+                &mut self.dc_textures,
+                p,
+                icons::DcIcon::Home,
+                !matches!(self.dc_section, DcSection::AddServer | DcSection::Discover),
+            )
+            .on_hover_text("Direct Messages")
+            .clicked()
+            {
+                go = Some(DcSection::Friends);
+            }
+            ui.add_space(10.0);
+            let (line, _) = ui.allocate_exact_size(Vec2::new(32.0, 2.0), Sense::hover());
+            ui.painter()
+                .rect_filled(line, CornerRadius::same(1), p.divider);
+            ui.add_space(10.0);
+            if dc_guild_tile(
+                ui,
+                &mut self.dc_textures,
+                p,
+                icons::DcIcon::AddServer,
+                matches!(self.dc_section, DcSection::AddServer),
+            )
+            .on_hover_text("Add a Server")
+            .clicked()
+            {
+                go = Some(DcSection::AddServer);
+            }
+            ui.add_space(8.0);
+            if dc_guild_tile(
+                ui,
+                &mut self.dc_textures,
+                p,
+                icons::DcIcon::Discover,
+                matches!(self.dc_section, DcSection::Discover),
+            )
+            .on_hover_text("Discover")
+            .clicked()
+            {
+                go = Some(DcSection::Discover);
+            }
+        });
+        if let Some(section) = go {
+            self.dc_open(section);
+        }
+    }
+
+    fn dc_sidebar(&mut self, ui: &mut egui::Ui, p: &Palette) {
+        let full = ui.max_rect();
+        let mut go = None;
+        let mut open_chat = None;
+        let mut focus_search = false;
+        let mut settings = false;
+        Frame::new()
+            .inner_margin(Margin::symmetric(8, 8))
+            .show(ui, |ui| {
+                // Discord stacks its rows flush; leftover item spacing would
+                // push the last DM under the pinned user bar.
+                ui.spacing_mut().item_spacing.y = 0.0;
+                // Search pill. Discord centres the hint, so the field is
+                // placed over a painted pill instead of being the pill.
+                let (rect, resp) =
+                    ui.allocate_exact_size(Vec2::new(ui.available_width(), 40.0), Sense::click());
+                ui.painter()
+                    .rect_filled(rect, CornerRadius::same(8), p.input_bg);
+                let field_rect = Rect::from_min_max(
+                    egui::pos2(rect.left() + 12.0, rect.top() + 9.0),
+                    egui::pos2(rect.right() - 12.0, rect.bottom() - 9.0),
+                );
+                let field = ui.put(
+                    field_rect,
+                    egui::TextEdit::singleline(&mut self.search)
+                        .id(egui::Id::new("dc-search"))
+                        .hint_text(
+                            RichText::new("Find or start a conversation")
+                                .font(theme::regular(13.5))
+                                .color(p.text_muted),
+                        )
+                        .frame(egui::Frame::NONE)
+                        .desired_width(field_rect.width())
+                        .font(theme::regular(13.5))
+                        .text_color(p.text),
+                );
+                if resp.clicked() {
+                    field.request_focus();
+                }
+                ui.add_space(8.0);
+                if dc_nav_row(
+                    ui,
+                    &mut self.dc_textures,
+                    p,
+                    icons::DcIcon::Friends,
+                    "Friends",
+                    matches!(self.dc_section, DcSection::Friends),
+                ) {
+                    go = Some(DcSection::Friends);
+                }
+                if dc_nav_row(
+                    ui,
+                    &mut self.dc_textures,
+                    p,
+                    icons::DcIcon::Nitro,
+                    "Nitro",
+                    matches!(self.dc_section, DcSection::Nitro),
+                ) {
+                    go = Some(DcSection::Nitro);
+                }
+                if dc_nav_row(
+                    ui,
+                    &mut self.dc_textures,
+                    p,
+                    icons::DcIcon::Shop,
+                    "Shop",
+                    matches!(self.dc_section, DcSection::Shop),
+                ) {
+                    go = Some(DcSection::Shop);
+                }
+                if dc_nav_row(
+                    ui,
+                    &mut self.dc_textures,
+                    p,
+                    icons::DcIcon::Quests,
+                    "Quests",
+                    matches!(self.dc_section, DcSection::Quests),
+                ) {
+                    go = Some(DcSection::Quests);
+                }
+                ui.add_space(8.0);
+                // "Direct Messages" heading with Discord's plus button.
+                let (head, _) =
+                    ui.allocate_exact_size(Vec2::new(ui.available_width(), 28.0), Sense::hover());
+                ui.painter().text(
+                    egui::pos2(head.left() + 4.0, head.center().y),
+                    egui::Align2::LEFT_CENTER,
+                    "Direct Messages",
+                    theme::semibold(11.5),
+                    p.text_muted,
+                );
+                let plus = Rect::from_center_size(
+                    egui::pos2(head.right() - 10.0, head.center().y),
+                    Vec2::splat(24.0),
+                );
+                let plus_resp = ui.interact(plus, ui.id().with("dc-new-dm"), Sense::click());
+                if plus_resp.hovered() {
+                    ui.painter()
+                        .rect_filled(plus, CornerRadius::same(6), p.selected);
+                }
+                self.dc_textures.paint(
+                    ui.ctx(),
+                    ui.painter(),
+                    Rect::from_center_size(plus.center(), Vec2::splat(16.0)),
+                    icons::DcIcon::Plus,
+                    p.text_muted,
+                );
+                if plus_resp.clicked() {
+                    focus_search = true;
+                }
+                let query = self.search.trim().to_lowercase();
+                let mut rows: Vec<Chat> = self
+                    .chats
+                    .iter()
+                    .filter(|c| {
+                        query.is_empty()
+                            || c.title.to_lowercase().contains(&query)
+                            || c.preview.to_lowercase().contains(&query)
+                    })
+                    .cloned()
+                    .collect();
+                rows.sort_by_key(|c| std::cmp::Reverse(c.last_at));
+                let active = self.active_chat.get(&Service::Discord).cloned();
+                // Stop above the pinned user bar instead of letting the last
+                // row sit under it.
+                let list_h = (full.bottom() - 76.0 - ui.cursor().min.y).max(80.0);
+                ScrollArea::vertical()
+                    .id_salt("dc-dms")
+                    .max_height(list_h)
+                    .auto_shrink([false, false])
+                    .show(ui, |ui| {
+                        // Discord's rows sit flush; egui's default 8px gap
+                        // would push the fifth DM under the user bar.
+                        ui.spacing_mut().item_spacing.y = 0.0;
+                        ui.add_space(2.0);
+                        for chat in &rows {
+                            let selected = active
+                                .as_ref()
+                                .is_some_and(|(a, id)| *a == chat.account.0 && *id == chat.id);
+                            if self.dc_dm_row(ui, p, chat, selected).clicked() {
+                                open_chat = Some(chat.clone());
+                            }
+                        }
+                        if rows.is_empty() {
+                            ui.add_space(40.0);
+                            ui.vertical_centered(|ui| {
+                                ui.label(
+                                    RichText::new(if query.is_empty() {
+                                        "No direct messages"
+                                    } else {
+                                        "No matches"
+                                    })
+                                    .font(theme::medium(13.0))
+                                    .color(p.text_muted),
+                                );
+                            });
+                        }
+                        ui.add_space(4.0);
+                    });
+            });
+
+        // User bar pinned to the sidebar's bottom edge.
+        let bar = Rect::from_min_max(
+            egui::pos2(full.left() + 8.0, full.bottom() - 66.0),
+            egui::pos2(full.right() - 8.0, full.bottom() - 8.0),
+        );
+        ui.painter()
+            .rect_filled(bar, CornerRadius::same(8), p.hover);
+        let picture = None;
+        wa_avatar(
+            ui,
+            p,
+            egui::pos2(bar.left() + 24.0, bar.center().y),
+            32.0,
+            &self.dc_name(),
+            picture,
+            None,
+        );
+        ui.painter().text(
+            egui::pos2(bar.left() + 48.0, bar.center().y - 8.0),
+            egui::Align2::LEFT_CENTER,
+            elide(&self.dc_name(), bar.width() - 170.0, 13.0),
+            theme::medium(13.5),
+            p.text,
+        );
+        ui.painter().text(
+            egui::pos2(bar.left() + 48.0, bar.center().y + 8.0),
+            egui::Align2::LEFT_CENTER,
+            "Online",
+            theme::regular(11.0),
+            p.text_muted,
+        );
+        let mut x = bar.right() - 8.0 - 16.0;
+        for (icon, on, which) in [
+            (Icon::Mic, !self.dc_muted, 0u8),
+            (Icon::Headphones, !self.dc_deafened, 1u8),
+            (Icon::Gear, true, 2u8),
+        ] {
+            let at = egui::pos2(x, bar.center().y);
+            x -= 36.0;
+            let rect = Rect::from_center_size(at, Vec2::splat(32.0));
+            let resp = ui.interact(rect, ui.id().with(("dc-voice", which)), Sense::click());
+            if resp.hovered() {
+                ui.painter()
+                    .rect_filled(rect, CornerRadius::same(6), p.selected);
+            }
+            icons::paint(
+                ui.painter(),
+                Rect::from_center_size(at, Vec2::splat(20.0)),
+                icon,
+                if on { p.text } else { p.text_muted },
+                1.8,
+            );
+            if !on {
+                ui.painter().line_segment(
+                    [at + Vec2::new(-8.0, 8.0), at + Vec2::new(8.0, -8.0)],
+                    Stroke::new(2.0, Color32::from_rgb(0xda, 0x37, 0x3c)),
+                );
+            }
+            if resp.hovered() {
+                ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
+            }
+            if resp.clicked() {
+                match which {
+                    0 => self.dc_muted = !self.dc_muted,
+                    1 => self.dc_deafened = !self.dc_deafened,
+                    _ => settings = true,
+                }
+            }
+        }
+        if focus_search {
+            ui.memory_mut(|m| m.request_focus(egui::Id::new("dc-search")));
+        }
+        if let Some(chat) = open_chat {
+            self.dc_section = DcSection::Chat;
+            self.open_chat(chat);
+        } else if let Some(section) = go {
+            self.dc_open(section);
+        }
+        if settings {
+            self.view = View::Settings;
+        }
+    }
+
+    fn dc_name(&self) -> String {
+        self.adapters
+            .get(&Service::Discord)
+            .map(|a| a.label())
+            .filter(|l| !l.is_empty())
+            .unwrap_or_else(|| "Discord".to_string())
+    }
+
+    fn dc_dm_row(
+        &mut self,
+        ui: &mut egui::Ui,
+        p: &Palette,
+        chat: &Chat,
+        selected: bool,
+    ) -> egui::Response {
+        let width = ui.available_width();
+        let (rect, resp) = ui.allocate_exact_size(Vec2::new(width, 42.0), Sense::click());
+        if selected {
+            ui.painter()
+                .rect_filled(rect, CornerRadius::same(8), p.selected);
+        } else if resp.hovered() {
+            ui.painter()
+                .rect_filled(rect, CornerRadius::same(8), p.hover);
+        }
+        let picture = self.avatar_texture(ui.ctx(), chat.avatar.as_deref());
+        wa_avatar(
+            ui,
+            p,
+            egui::pos2(rect.left() + 24.0, rect.center().y),
+            32.0,
+            &chat.title,
+            picture.as_ref(),
+            None,
+        );
+        let badge = if chat.unread > 0 { 26.0 } else { 0.0 };
+        ui.painter().text(
+            egui::pos2(rect.left() + 48.0, rect.center().y),
+            egui::Align2::LEFT_CENTER,
+            elide(&chat.title, rect.width() - 58.0 - badge, 15.0),
+            theme::medium(15.0),
+            p.text,
+        );
+        if chat.unread > 0 {
+            let pill = Rect::from_center_size(
+                egui::pos2(rect.right() - 16.0, rect.center().y),
+                Vec2::new(20.0, 16.0),
+            );
+            ui.painter().rect_filled(
+                pill,
+                CornerRadius::same(8),
+                Color32::from_rgb(0xf2, 0x3f, 0x43),
+            );
+            ui.painter().text(
+                pill.center(),
+                egui::Align2::CENTER_CENTER,
+                if chat.unread > 99 {
+                    "99+".to_string()
+                } else {
+                    chat.unread.to_string()
+                },
+                theme::semibold(10.0),
+                Color32::WHITE,
+            );
+        }
+        if resp.hovered() {
+            ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
+        }
+        resp
+    }
+
+    fn dc_page(&mut self, ui: &mut egui::Ui) {
+        let p = theme::service_palette(self.mode, Service::Discord);
+        egui::CentralPanel::default()
+            .frame(Frame::new().fill(p.chat_bg))
+            .show(ui, |ui| match self.dc_section {
+                DcSection::Friends => self.dc_friends(ui, &p),
+                DcSection::Chat => {}
+                section => {
+                    let back = dc_info_page(ui, &mut self.dc_textures, &p, section);
+                    if back {
+                        self.dc_open(DcSection::Friends);
+                    }
+                }
+            });
+    }
+
+    fn dc_friends(&mut self, ui: &mut egui::Ui, p: &Palette) {
+        let mut open = None;
+        let mut add = false;
+        Frame::new()
+            .inner_margin(Margin::symmetric(16, 0))
+            .show(ui, |ui| {
+                let (rect, _) =
+                    ui.allocate_exact_size(Vec2::new(ui.available_width(), 48.0), Sense::hover());
+                self.dc_textures.paint(
+                    ui.ctx(),
+                    ui.painter(),
+                    Rect::from_center_size(
+                        egui::pos2(rect.left() + 10.0, rect.center().y),
+                        Vec2::splat(20.0),
+                    ),
+                    icons::DcIcon::Friends,
+                    p.text_muted,
+                );
+                ui.painter().text(
+                    egui::pos2(rect.left() + 28.0, rect.center().y),
+                    egui::Align2::LEFT_CENTER,
+                    "Friends",
+                    theme::medium(15.0),
+                    p.text,
+                );
+                ui.scope_builder(egui::UiBuilder::new().max_rect(rect), |ui| {
+                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                        let (btn, resp) =
+                            ui.allocate_exact_size(Vec2::new(100.0, 32.0), Sense::click());
+                        ui.painter()
+                            .rect_filled(btn, CornerRadius::same(8), p.accent);
+                        ui.painter().text(
+                            btn.center(),
+                            egui::Align2::CENTER_CENTER,
+                            "Add Friend",
+                            theme::medium(13.0),
+                            Color32::WHITE,
+                        );
+                        if resp.hovered() {
+                            ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
+                        }
+                        if resp.clicked() {
+                            add = true;
+                        }
+                        ui.add_space(10.0);
+                        for (label, tab, width) in [("All", 0u8, 48.0), ("Online", 1u8, 64.0)] {
+                            let (tab_rect, tab_resp) =
+                                ui.allocate_exact_size(Vec2::new(width, 32.0), Sense::click());
+                            let active = self.dc_tab == tab;
+                            if active {
+                                ui.painter().rect_filled(
+                                    tab_rect,
+                                    CornerRadius::same(8),
+                                    p.selected,
+                                );
+                            }
+                            ui.painter().text(
+                                tab_rect.center(),
+                                egui::Align2::CENTER_CENTER,
+                                label,
+                                theme::regular(13.0),
+                                if active { p.text } else { p.text_muted },
+                            );
+                            if tab_resp.clicked() {
+                                self.dc_tab = tab;
+                            }
+                            ui.add_space(4.0);
+                        }
+                    });
+                });
+                let (line, _) =
+                    ui.allocate_exact_size(Vec2::new(ui.available_width(), 1.0), Sense::hover());
+                ui.painter()
+                    .hline(line.x_range(), line.center().y, Stroke::new(1.0, p.divider));
+            });
+
+        // Active Now column, Discord's empty right rail.
+        egui::Panel::right("dc-now")
+            .exact_size(300.0)
+            .resizable(false)
+            .frame(Frame::new().fill(p.chat_bg))
+            .show(ui, |ui| {
+                Frame::new()
+                    .inner_margin(Margin::symmetric(16, 14))
+                    .show(ui, |ui| {
+                        ui.label(
+                            RichText::new("Active Now")
+                                .font(theme::semibold(16.0))
+                                .color(p.text),
+                        );
+                        ui.add_space(10.0);
+                        let (line, _) = ui.allocate_exact_size(
+                            Vec2::new(ui.available_width(), 1.0),
+                            Sense::hover(),
+                        );
+                        ui.painter().hline(
+                            line.x_range(),
+                            line.center().y,
+                            Stroke::new(1.0, p.divider),
+                        );
+                        ui.add_space(14.0);
+                        Frame::new()
+                            .fill(p.hover)
+                            .stroke(Stroke::new(1.0, p.divider))
+                            .corner_radius(8)
+                            .inner_margin(Margin::symmetric(18, 20))
+                            .show(ui, |ui| {
+                                ui.set_width(ui.available_width());
+                                ui.vertical_centered(|ui| {
+                                    ui.label(
+                                        RichText::new("It's quiet for now...")
+                                            .font(theme::semibold(13.5))
+                                            .color(p.text),
+                                    );
+                                    ui.add_space(6.0);
+                                    ui.label(
+                                        RichText::new(
+                                            "When a friend starts an activity—like playing a game or hanging out on voice—we'll show it here!",
+                                        )
+                                        .font(theme::regular(12.0))
+                                        .color(p.text_muted),
+                                    );
+                                });
+                            });
+                    });
+            });
+
+        // Friends list.
+        Frame::new()
+            .inner_margin(Margin::symmetric(16, 12))
+            .show(ui, |ui| {
+                let (rect, resp) =
+                    ui.allocate_exact_size(Vec2::new(ui.available_width(), 36.0), Sense::click());
+                ui.painter()
+                    .rect_filled(rect, CornerRadius::same(8), p.input_bg);
+                self.dc_textures.paint(
+                    ui.ctx(),
+                    ui.painter(),
+                    Rect::from_center_size(
+                        egui::pos2(rect.left() + 16.0, rect.center().y),
+                        Vec2::splat(16.0),
+                    ),
+                    icons::DcIcon::Search,
+                    p.text_muted,
+                );
+                let field_rect = Rect::from_min_max(
+                    egui::pos2(rect.left() + 32.0, rect.top() + 7.0),
+                    egui::pos2(rect.right() - 10.0, rect.bottom() - 7.0),
+                );
+                let field = ui.put(
+                    field_rect,
+                    egui::TextEdit::singleline(&mut self.search)
+                        .id(egui::Id::new("dc-friend-search"))
+                        .hint_text(
+                            RichText::new("Search")
+                                .font(theme::regular(13.5))
+                                .color(p.text_muted),
+                        )
+                        .frame(egui::Frame::NONE)
+                        .desired_width(field_rect.width())
+                        .font(theme::regular(13.5))
+                        .text_color(p.text),
+                );
+                if resp.clicked() {
+                    field.request_focus();
+                }
+                ui.add_space(10.0);
+                let query = self.search.trim().to_lowercase();
+                let mut rows: Vec<Chat> = self
+                    .chats
+                    .iter()
+                    .filter(|c| {
+                        query.is_empty()
+                            || c.title.to_lowercase().contains(&query)
+                            || c.preview.to_lowercase().contains(&query)
+                    })
+                    .cloned()
+                    .collect();
+                rows.sort_by_key(|c| std::cmp::Reverse(c.last_at));
+                let online = self.dc_tab == 1;
+                ui.painter().text(
+                    ui.cursor().min,
+                    egui::Align2::LEFT_TOP,
+                    if online {
+                        "Online — 0".to_string()
+                    } else {
+                        format!("All — {}", rows.len())
+                    },
+                    theme::semibold(11.5),
+                    p.text_muted,
+                );
+                ui.add_space(18.0);
+                ScrollArea::vertical()
+                    .id_salt("dc-friends")
+                    .auto_shrink([false, false])
+                    .show(ui, |ui| {
+                        ui.spacing_mut().item_spacing.y = 0.0;
+                        if online {
+                            ui.add_space(30.0);
+                            ui.vertical_centered(|ui| {
+                                ui.label(
+                                    RichText::new("No one is online")
+                                        .font(theme::semibold(13.5))
+                                        .color(p.text),
+                                );
+                                ui.add_space(4.0);
+                                ui.label(
+                                    RichText::new(
+                                        "Presence is not exposed by United's Discord adapter.",
+                                    )
+                                    .font(theme::regular(12.0))
+                                    .color(p.text_muted),
+                                );
+                            });
+                        }
+                        for chat in &rows {
+                            let (row, row_resp) = ui.allocate_exact_size(
+                                Vec2::new(ui.available_width(), 48.0),
+                                Sense::click(),
+                            );
+                            if row_resp.hovered() {
+                                ui.painter()
+                                    .rect_filled(row, CornerRadius::same(8), p.hover);
+                            }
+                            let picture = self.avatar_texture(ui.ctx(), chat.avatar.as_deref());
+                            wa_avatar(
+                                ui,
+                                p,
+                                egui::pos2(row.left() + 24.0, row.center().y),
+                                32.0,
+                                &chat.title,
+                                picture.as_ref(),
+                                None,
+                            );
+                            ui.painter().text(
+                                egui::pos2(row.left() + 48.0, row.center().y - 8.0),
+                                egui::Align2::LEFT_CENTER,
+                                elide(&chat.title, row.width() - 60.0, 14.0),
+                                theme::medium(14.5),
+                                p.text,
+                            );
+                            ui.painter().text(
+                                egui::pos2(row.left() + 48.0, row.center().y + 9.0),
+                                egui::Align2::LEFT_CENTER,
+                                elide(
+                                    if chat.preview.is_empty() {
+                                        "Direct message"
+                                    } else {
+                                        &chat.preview
+                                    },
+                                    row.width() - 60.0,
+                                    12.0,
+                                ),
+                                theme::regular(12.0),
+                                p.text_muted,
+                            );
+                            if row_resp.clicked() {
+                                open = Some(chat.clone());
+                            }
+                        }
+                    });
+            });
+        if add {
+            self.dc_section = DcSection::AddFriend;
+        } else if let Some(chat) = open {
+            self.dc_section = DcSection::Chat;
+            self.open_chat(chat);
+        }
+    }
+
     fn chat_list(&mut self, ui: &mut egui::Ui) {
+        // Telegram Web A replaces the whole list column with a floating card,
+        // so it brings its own panel instead of sharing the 340px one.
+        if matches!(self.view, View::Service(Service::Telegram)) {
+            self.tg_column(ui);
+            return;
+        }
+        // Discord keeps its own guild rail and DM sidebar.
+        if matches!(self.view, View::Service(Service::Discord)) {
+            self.dc_columns(ui);
+            return;
+        }
         // A service view wears that client's own pane colours, so the list and
         // the conversation read as one window instead of two themes.
         let p = match self.view {
@@ -2300,6 +7947,15 @@ impl UnitedApp {
             _ => self.palette(),
         };
         let unified = self.view == View::Unified;
+        let wa = matches!(self.view, View::Service(Service::WhatsApp));
+        if wa {
+            self.wa_rail(ui);
+        }
+        // Business tools and the profile use the whole window, not the list
+        // column, so the rail is all that is drawn here.
+        if wa && matches!(self.wa_section, WaSection::Business | WaSection::Profile) {
+            return;
+        }
         let width = 340.0;
         egui::Panel::left("chats")
             .exact_size(width)
@@ -2312,6 +7968,10 @@ impl UnitedApp {
                     full.y_range(),
                     Stroke::new(HAIRLINE, p.divider),
                 );
+                if wa && self.wa_section != WaSection::Chats {
+                    self.wa_pane(ui, &p);
+                    return;
+                }
 
                 // Title row: large title left, account label right.
                 Frame::new()
@@ -3570,11 +9230,13 @@ impl UnitedApp {
                                 let draft = self.drafts.entry(key.clone()).or_default();
                                 let before = draft.clone();
                                 let placeholder = match service {
-                                    Service::WhatsApp => "Type a message",
-                                    Service::Telegram => "Message",
-                                    Service::Discord => "Message #channel",
+                                    Service::WhatsApp => "Type a message".to_string(),
+                                    Service::Telegram => "Message".to_string(),
+                                    // Discord DMs name the person; channels are
+                                    // outside the adapter.
+                                    Service::Discord => format!("Message @{}", chat.title),
                                 };
-                                let out = widgets::composer(ui, draft, &p, placeholder);
+                                let out = widgets::composer(ui, draft, &p, &placeholder);
                                 if *draft != before {
                                     typing_edge = Some(!draft.trim().is_empty());
                                     let spec = format!("{}|{}|{}", service.id(), key.0, key.1);
@@ -5583,7 +11245,27 @@ impl eframe::App for UnitedApp {
         let t2 = Instant::now();
         if !no_service {
             self.chat_list(ui);
-            self.conversation(ui);
+            if matches!(self.view, View::Service(Service::WhatsApp)) {
+                match self.wa_section {
+                    WaSection::Chats => self.conversation(ui),
+                    WaSection::Business | WaSection::Profile => self.wa_page(ui),
+                    _ => self.wa_detail(ui),
+                }
+            } else if matches!(self.view, View::Service(Service::Telegram)) {
+                if matches!(self.tg_section, TgSection::Chats) {
+                    self.conversation(ui);
+                } else {
+                    self.tg_detail(ui);
+                }
+            } else if matches!(self.view, View::Service(Service::Discord)) {
+                if matches!(self.dc_section, DcSection::Chat) {
+                    self.conversation(ui);
+                } else {
+                    self.dc_page(ui);
+                }
+            } else {
+                self.conversation(ui);
+            }
         } else {
             self.settings_view(ui);
         }
@@ -5604,6 +11286,16 @@ impl eframe::App for UnitedApp {
         self.auth_modal(&ctx);
         self.toast(&ctx);
         self.edit_dialog(&ctx);
+        match self.wa_modal {
+            Some(WaModal::Media) if matches!(self.view, View::Service(Service::WhatsApp)) => {
+                self.wa_media_sheet(&ctx)
+            }
+            Some(WaModal::Advertise) if matches!(self.view, View::Service(Service::WhatsApp)) => {
+                self.wa_advertise_sheet(&ctx)
+            }
+            Some(_) => self.wa_modal = None,
+            None => {}
+        }
         self.call_overlay(&ctx);
         if let Some((texture, path)) = self.media_view.clone() {
             let screen = ctx.content_rect();

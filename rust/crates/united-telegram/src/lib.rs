@@ -38,6 +38,10 @@ pub struct TelegramAdapter {
     login: Mutex<Option<(LoginToken, String)>>,
     password: Mutex<Option<PasswordToken>>,
     targets: Arc<Mutex<HashMap<String, PeerRef>>>,
+    /// Oldest message id already paged back to, per chat. Telegram ids grow
+    /// monotonically, so paging from the newest page keeps the cache gap-free
+    /// after the app has been closed for a while.
+    anchors: Mutex<HashMap<String, i32>>,
     account: Arc<Mutex<String>>,
     label: Arc<Mutex<String>>,
     prompt: Mutex<Option<AuthPrompt>>,
@@ -54,6 +58,7 @@ impl TelegramAdapter {
             login: Mutex::new(None),
             password: Mutex::new(None),
             targets: Arc::new(Mutex::new(HashMap::new())),
+            anchors: Mutex::new(HashMap::new()),
             account: Arc::new(Mutex::new("telegram:me".into())),
             label: Arc::new(Mutex::new("Telegram".into())),
             prompt: Mutex::new(None),
@@ -667,30 +672,36 @@ impl Adapter for TelegramAdapter {
     }
 
     async fn load_history(&self, chat_id: &str, limit: usize) -> Result<()> {
-        let client = self
-            .client
-            .lock()
-            .unwrap()
-            .clone()
-            .ok_or_else(|| anyhow!("telegram not connected"))?;
-        let peer = self.peer_for(chat_id)?;
-        // Anchor on the oldest stored message so scrolling up pages backwards
-        // instead of re-fetching the same newest page.
-        let anchor = united_core::Store::shared()
-            .ok()
-            .and_then(|store| {
-                store
-                    .oldest_message(&self.account(), chat_id)
-                    .ok()
-                    .flatten()
-            })
-            .and_then(|(id, _, _)| id.parse::<i32>().ok());
+        // Startup restores the last chat before MTProto has connected and the
+        // dialog list has populated the peer map. Wait for both instead of
+        // failing the one history fetch the open chat will ever ask for.
+        let mut waited = 0u32;
+        let (client, peer) = loop {
+            let client = self.client.lock().unwrap().clone();
+            let peer = self.targets.lock().unwrap().get(chat_id).copied();
+            if let (Some(client), Some(peer)) = (client, peer) {
+                break (client, peer);
+            }
+            if waited >= 40 {
+                return Err(anyhow!("telegram not ready for history"));
+            }
+            waited += 1;
+            tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+        };
+        // Page from the newest message first. Until a chat has been paged in
+        // this process the store may end days behind (the app only receives
+        // live updates while it runs), and anchoring on its oldest row would
+        // fetch even older messages while the newest ones never arrive.
+        let anchor = self.anchors.lock().unwrap().get(chat_id).copied();
         let mut iterator = client.iter_messages(peer);
         if let Some(id) = anchor {
             iterator = iterator.offset_id(id);
         }
         let mut iter = iterator.limit(limit.min(100));
+        let mut oldest: Option<i32> = None;
         while let Some(msg) = iter.next().await.map_err(|e| anyhow!("history: {e}"))? {
+            let id = msg.id();
+            oldest = Some(oldest.map_or(id, |min| min.min(id)));
             let media = media_ref(&msg);
             let body = {
                 let text = msg.text();
@@ -722,6 +733,9 @@ impl Adapter for TelegramAdapter {
                 message,
                 live: false,
             });
+        }
+        if let Some(id) = oldest {
+            self.anchors.lock().unwrap().insert(chat_id.to_string(), id);
         }
         Ok(())
     }

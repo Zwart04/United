@@ -53,7 +53,7 @@ impl DiscordAdapter {
     fn load_token() -> Option<String> {
         std::fs::read_to_string(Self::token_path())
             .ok()
-            .map(|s| s.trim().to_string())
+            .map(|s| s.trim().trim_start_matches("Bot ").to_string())
             .filter(|s| !s.is_empty())
     }
 
@@ -93,7 +93,7 @@ impl DiscordAdapter {
     async fn rest_me(client: &reqwest::Client, token: &str) -> Result<Value> {
         let resp = client
             .get(format!("{API}/users/@me"))
-            .header("Authorization", token)
+            .header("Authorization", format!("Bot {token}"))
             .send()
             .await
             .context("discord /users/@me")?;
@@ -106,7 +106,7 @@ impl DiscordAdapter {
     async fn fetch_channels(client: &reqwest::Client, token: &str) -> Result<Vec<Value>> {
         let resp = client
             .get(format!("{API}/users/@me/channels"))
-            .header("Authorization", token)
+            .header("Authorization", format!("Bot {token}"))
             .send()
             .await?;
         if !resp.status().is_success() {
@@ -130,7 +130,7 @@ impl DiscordAdapter {
         let resp = client
             .get(format!("{API}/channels/{channel}/messages"))
             .query(&query)
-            .header("Authorization", token)
+            .header("Authorization", format!("Bot {token}"))
             .send()
             .await?;
         if !resp.status().is_success() {
@@ -190,7 +190,7 @@ impl Adapter for DiscordAdapter {
         let AuthInput::Token(token) = input else {
             return Ok(());
         };
-        let token = token.trim().to_string();
+        let token = token.trim().trim_start_matches("Bot ").to_string();
         if token.is_empty() {
             return Ok(());
         }
@@ -227,7 +227,7 @@ impl Adapter for DiscordAdapter {
         let resp = self
             .client
             .post(format!("{API}/channels/{chat_id}/messages"))
-            .header("Authorization", &token)
+            .header("Authorization", format!("Bot {token}"))
             .json(&json!({ "content": text, "tts": false }))
             .send()
             .await?;
@@ -278,7 +278,7 @@ impl Adapter for DiscordAdapter {
         let resp = self
             .client
             .post(format!("{API}/channels/{chat_id}/messages"))
-            .header("Authorization", &token)
+            .header("Authorization", format!("Bot {token}"))
             .multipart(form)
             .send()
             .await?;

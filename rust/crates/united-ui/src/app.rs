@@ -2473,6 +2473,9 @@ impl UnitedApp {
             }
         } else if let Some([_, account, chat_id]) = &app.settings.last_chat
             && let Ok(Some(chat)) = app.store.chat(account, chat_id)
+            && !["UNITED_WA_TAB", "UNITED_TG", "UNITED_DC", "UNITED_VIEW"]
+                .iter()
+                .any(|key| std::env::var(key).is_ok())
         {
             app.open_chat(chat);
         }
@@ -4243,13 +4246,11 @@ impl UnitedApp {
                         ui.add_space(4.0);
                     }
                     ui.add_space(8.0);
-                    let line = ui.max_rect();
-                    ui.painter().hline(
-                        egui::Rangef::new(line.left() + 14.0, line.right() - 14.0),
-                        line.top(),
-                        Stroke::new(HAIRLINE, p.divider),
-                    );
-                    ui.add_space(12.0);
+                    // No divider here: WhatsApp Web runs Communities,
+                    // Business and Advertise as one stack. The old hairline
+                    // used the scope's max_rect, so it landed at the top of
+                    // the rail, above Chats.
+                    ui.add_space(4.0);
                     let business = wa_tile(
                         ui,
                         &mut self.wa_textures,
@@ -6149,7 +6150,11 @@ impl UnitedApp {
     fn tg_column(&mut self, ui: &mut egui::Ui) {
         let p = theme::service_palette(self.mode, Service::Telegram);
         egui::Panel::left("tg-column")
-            .exact_size(406.0)
+            .default_size(406.0)
+            .size_range(320.0..=520.0)
+            .resizable(true)
+            // The card floats inside; a panel hairline would cut the wallpaper.
+            .show_separator_line(false)
             .frame(Frame::new().fill(p.chat_bg))
             .show(ui, |ui| {
                 let full = ui.max_rect();
@@ -6223,7 +6228,11 @@ impl UnitedApp {
                 .get(&(c.account.0.clone(), c.id.clone()))
                 .is_some_and(|flags| flags.0)
         };
-        rows.sort_by(|a, b| pinned(b).cmp(&pinned(a)));
+        rows.sort_by(|a, b| {
+            pinned(b)
+                .cmp(&pinned(a))
+                .then_with(|| b.last_at.cmp(&a.last_at))
+        });
         let active = self.active_chat.get(&Service::Telegram).cloned();
         let mut open = None;
         ScrollArea::vertical()
@@ -7958,8 +7967,11 @@ impl UnitedApp {
         }
         let width = 340.0;
         egui::Panel::left("chats")
-            .exact_size(width)
-            .resizable(false)
+            .default_size(width)
+            .size_range(280.0..=480.0)
+            .resizable(true)
+            // The hairline is painted below; the drag handle sits on it.
+            .show_separator_line(false)
             .frame(Frame::new().fill(p.panel))
             .show(ui, |ui| {
                 let full = ui.max_rect();
@@ -10675,6 +10687,15 @@ impl UnitedApp {
                             RichText::new("Create the bot first")
                                 .font(theme::semibold(12.5))
                                 .color(p.text),
+                        );
+                        ui.add_space(4.0);
+                        ui.label(
+                            RichText::new(
+                                "The App ID and client secret are not used: the bot token \
+                                 is the credential.",
+                            )
+                            .font(theme::regular(11.0))
+                            .color(p.text_muted),
                         );
                         ui.add_space(4.0);
                         for (step, text) in [

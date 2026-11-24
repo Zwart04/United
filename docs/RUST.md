@@ -89,8 +89,12 @@ inbox gabungan tetap terbaca sebagai satu aplikasi.
   Palet `theme-darker`: rail/sidebar `#121214`, kolom pesan `#1a1a1e`, search
   `#222225`, baris terpilih `#2c2c30`, user bar `#202024`, blurple `#5865f2`.
   Ke-14 glyph di-capture dari DOM (`assets/dc/`), mic/headphones digambar sebagai
-  vektor. Add Server/Discover/Nitro/Shop/Quests/Add Friend membuka kartu
-  penjelasan jujur karena kanal guild & fitur akun di luar cakupan adapter DM.
+  vektor. Rail memuat server yang dilihat bot (`GET /users/@me/guilds`) sebagai
+  inisial; klik server memuat kanal teks/announcement
+  (`GET /guilds/{id}/channels`) ke sidebar dan memakai `Chat` yang sama untuk
+  riwayat, composer, dan store. Add Server/Discover/Nitro/Shop/Quests/Add Friend
+  tetap membuka kartu penjelasan jujur karena pembelian dan friend request butuh
+  sesi user, bukan bot token.
 - Foto profil chat diambil lewat `Adapter::load_avatar` untuk chat yang tampil
   di daftar dan untuk chat yang dibuka, sekali per sesi. Sebelumnya hanya
   pesan live dan 12 pengirim riwayat yang memicu permintaan, jadi kontak yang
@@ -360,7 +364,8 @@ Hook debug (hanya untuk review visual, tidak memengaruhi build rilis):
 | `UNITED_PASTE_TEST=1` | baca gambar clipboard sekali dan catat path hasilnya di log |
 | `UNITED_WA_TAB=media\|advertise\|calls\|status\|...` | buka tab/sheet WhatsApp untuk screenshot |
 | `UNITED_TG=drawer\|more\|contacts\|settings\|profile\|info` | buka pane Telegram Web A untuk screenshot |
-| `UNITED_DC=friends\|dm\|nitro\|shop\|quests\|addfriend\|addserver\|discover` | buka pane Discord + 5 DM contoh bila belum ada akun |
+| `UNITED_DC=friends\|dm\|nitro\|shop\|quests\|addfriend\|addserver\|discover\|guild\|guildchat` | buka pane Discord + 5 DM contoh bila belum ada akun |
+| `UNITED_DC_GUILDS=1` | isi rail dengan dua server contoh dan kanal teksnya (screenshot tanpa bot token) |
 
 ## Cakupan Rust
 

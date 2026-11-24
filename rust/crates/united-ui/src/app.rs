@@ -137,8 +137,9 @@ enum TgSettingsTab {
     Stickers,
 }
 
-/// Discord Web's guild rail and channel sidebar. Guild channels are outside
-/// the adapter's scope, so the rail's buttons explain that instead of lying.
+/// Discord Web's guild rail and channel sidebar. `Guild` is the only variant
+/// that carries state, and it lives in [`UnitedApp::dc_guild`] so this enum
+/// stays `Copy` for the rest of the shell.
 #[derive(Clone, Copy, PartialEq, Eq, Default)]
 enum DcSection {
     #[default]
@@ -149,6 +150,7 @@ enum DcSection {
     AddFriend,
     AddServer,
     Discover,
+    Guild,
     Chat,
 }
 
@@ -162,6 +164,7 @@ impl DcSection {
             Self::AddFriend => "Add Friend",
             Self::AddServer => "Add a Server",
             Self::Discover => "Discover",
+            Self::Guild => "Server",
         }
     }
 
@@ -180,7 +183,7 @@ impl DcSection {
                 "Friend requests need a Discord user session. United's adapter connects with a bot token and only lists conversations that already exist."
             }
             Self::AddServer => {
-                "Guild channels are outside the adapter. United lists direct messages; server text and voice stay in Discord."
+                "United cannot create servers. Invite the bot to an existing server and it appears in this rail; voice channels stay in Discord."
             }
             Self::Discover => {
                 "Server discovery is Discord's directory of public guilds. United does not browse guilds."
@@ -1586,6 +1589,48 @@ fn dc_guild_tile(
     resp
 }
 
+/// 48px guild tile with the guild's initial. Discord draws the real icon when
+/// the guild has one; United has no guild-image cache yet, and the letter keeps
+/// every server distinguishable without an extra network request per frame.
+fn dc_guild_tile_initial(
+    ui: &mut egui::Ui,
+    p: &Palette,
+    name: &str,
+    selected: bool,
+) -> egui::Response {
+    let (rect, resp) = ui.allocate_exact_size(Vec2::splat(48.0), Sense::click());
+    if selected {
+        let pill = Rect::from_center_size(
+            egui::pos2(rect.left() - 12.0, rect.center().y),
+            Vec2::new(8.0, 32.0),
+        );
+        ui.painter()
+            .rect_filled(pill, CornerRadius::same(4), Color32::WHITE);
+        ui.painter()
+            .rect_filled(rect, CornerRadius::same(16), p.accent);
+    } else {
+        ui.painter()
+            .rect_filled(rect, CornerRadius::same(16), p.hover);
+    }
+    let first = name.chars().next().unwrap_or('?');
+    let initial = first.to_uppercase().next().unwrap_or(first);
+    ui.painter().text(
+        rect.center(),
+        egui::Align2::CENTER_CENTER,
+        initial,
+        theme::semibold(20.0),
+        if selected {
+            Color32::WHITE
+        } else {
+            p.text_muted
+        },
+    );
+    if resp.hovered() {
+        ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
+    }
+    resp
+}
+
 /// One nav row in Discord's DM sidebar (Friends, Nitro, Shop, Quests).
 fn dc_nav_row(
     ui: &mut egui::Ui,
@@ -1833,6 +1878,14 @@ pub struct UnitedApp {
     tg_textures: icons::TgTextures,
     /// Discord's own rail, sidebar page and Friends tab.
     dc_section: DcSection,
+    /// Guild id backing [`DcSection::Guild`], if one is open.
+    dc_guild: Option<String>,
+    /// Display name of the open guild, captured when the tile is clicked.
+    dc_guild_name: Option<String>,
+    /// Text channels for the open guild, loaded on demand.
+    dc_channels: Vec<(String, String)>,
+    /// Pending guild-channel fetch, polled from the sidebar.
+    dc_channels_rx: Option<std::sync::mpsc::Receiver<Vec<(String, String)>>>,
     /// Friends page tab: 0 All, 1 Online.
     dc_tab: u8,
     dc_muted: bool,
@@ -2163,6 +2216,10 @@ impl UnitedApp {
             tg_contact: None,
             tg_textures: icons::TgTextures::default(),
             dc_section: DcSection::Friends,
+            dc_guild: None,
+            dc_guild_name: None,
+            dc_channels: Vec::new(),
+            dc_channels_rx: None,
             dc_tab: 0,
             dc_muted: false,
             dc_deafened: false,
@@ -2528,6 +2585,28 @@ impl UnitedApp {
                 "addfriend" => DcSection::AddFriend,
                 "addserver" => DcSection::AddServer,
                 "discover" => DcSection::Discover,
+                "guild" => {
+                    app.dc_section = DcSection::Guild;
+                    app.dc_guild = Some("1".into());
+                    app.dc_guild_name = Some("Rust Indonesia".into());
+                    app.dc_channels = vec![
+                        ("101".into(), "general".into()),
+                        ("102".into(), "rust".into()),
+                        ("103".into(), "off-topic".into()),
+                    ];
+                    return app;
+                }
+                "guildchat" => {
+                    app.dc_guild = Some("1".into());
+                    app.dc_guild_name = Some("Rust Indonesia".into());
+                    app.dc_channels = vec![
+                        ("101".into(), "general".into()),
+                        ("102".into(), "rust".into()),
+                        ("103".into(), "off-topic".into()),
+                    ];
+                    app.dc_open_channel("101".into(), "general".into());
+                    return app;
+                }
                 "dm" => {
                     app.dc_section = DcSection::Chat;
                     // Demo rows only load in refresh_lists, so seed one here.
@@ -3094,6 +3173,13 @@ impl UnitedApp {
                 let _ = self.store.upsert_chat(&chat);
                 updated_chats.push(chat);
             } else if !message.outgoing {
+                // Discord channels are created explicitly: DMs by READY /
+                // CHANNEL_CREATE and guild channels by the guild sidebar. A
+                // message must not materialise a fake DM titled with the
+                // sender's name.
+                if message.service == Service::Discord {
+                    continue;
+                }
                 let chat = Chat {
                     id: message.chat_id.clone(),
                     account: message.account.clone(),
@@ -7268,7 +7354,69 @@ impl UnitedApp {
 
     fn dc_open(&mut self, section: DcSection) {
         self.dc_section = section;
+        if section != DcSection::Guild {
+            self.dc_guild = None;
+            self.dc_guild_name = None;
+            self.dc_channels.clear();
+            self.dc_channels_rx = None;
+        }
         self.search.clear();
+    }
+
+    /// Open one guild and load its text channels in the background.
+    fn dc_open_guild(&mut self, guild_id: String, guild_name: String) {
+        self.dc_section = DcSection::Guild;
+        self.dc_guild = Some(guild_id.clone());
+        self.dc_guild_name = Some(guild_name);
+        self.dc_channels.clear();
+        self.search.clear();
+        if std::env::var("UNITED_DC_GUILDS").is_ok() {
+            self.dc_channels = vec![
+                ("101".into(), "general".into()),
+                ("102".into(), "rust".into()),
+                ("103".into(), "off-topic".into()),
+            ];
+            self.dc_channels_rx = None;
+            return;
+        }
+        let Some(adapter) = self.adapters.get(&Service::Discord).cloned() else {
+            return;
+        };
+        let (tx, rx) = std::sync::mpsc::channel();
+        tokio::spawn(async move {
+            let channels = adapter.guild_channels(&guild_id).await.unwrap_or_default();
+            let _ = tx.send(channels);
+        });
+        self.dc_channels_rx = Some(rx);
+    }
+
+    /// Turn a guild channel into the same [`Chat`] shape the DM list uses, so
+    /// history, the composer and the message store keep working unchanged.
+    fn dc_open_channel(&mut self, id: String, name: String) {
+        let account = self
+            .adapters
+            .get(&Service::Discord)
+            .map(|adapter| adapter.account())
+            .unwrap_or_else(|| "discord:me".into());
+        let chat = Chat {
+            id: id.clone(),
+            account: united_core::model::AccountId(account),
+            service: Service::Discord,
+            title: name,
+            is_group: false,
+            avatar: None,
+            unread: 0,
+            muted: false,
+            last_at: 0,
+            preview: String::new(),
+            preview_sender: String::new(),
+            target: id,
+        };
+        // Persist the channel title before opening so a message that arrived
+        // earlier cannot leave the store with the sender's name as its title.
+        let _ = self.store.upsert_chat(&chat);
+        self.dc_section = DcSection::Chat;
+        self.open_chat(chat);
     }
 
     /// Discord's 72px guild rail and 300px DM sidebar, on top of United's
@@ -7286,7 +7434,22 @@ impl UnitedApp {
     }
 
     fn dc_rail(&mut self, ui: &mut egui::Ui, p: &Palette) {
+        // Clone once per frame: a bot account only sees guilds it joined, so
+        // this is a short list and never touches the network here.
+        // UNITED_DC_GUILDS seeds two fake servers for layout screenshots.
+        let guilds = if std::env::var("UNITED_DC_GUILDS").is_ok() {
+            vec![
+                ("1".to_string(), "Rust Indonesia".to_string()),
+                ("2".to_string(), "Gamedev".to_string()),
+            ]
+        } else {
+            self.adapters
+                .get(&Service::Discord)
+                .map(|adapter| adapter.guilds())
+                .unwrap_or_default()
+        };
         let mut go = None;
+        let mut open_guild = None;
         ui.vertical_centered(|ui| {
             ui.add_space(12.0);
             if dc_guild_tile(
@@ -7294,7 +7457,10 @@ impl UnitedApp {
                 &mut self.dc_textures,
                 p,
                 icons::DcIcon::Home,
-                !matches!(self.dc_section, DcSection::AddServer | DcSection::Discover),
+                !matches!(
+                    self.dc_section,
+                    DcSection::AddServer | DcSection::Discover | DcSection::Guild
+                ) && self.dc_guild.is_none(),
             )
             .on_hover_text("Direct Messages")
             .clicked()
@@ -7306,6 +7472,16 @@ impl UnitedApp {
             ui.painter()
                 .rect_filled(line, CornerRadius::same(1), p.divider);
             ui.add_space(10.0);
+            for (id, name) in &guilds {
+                let selected = self.dc_guild.as_deref() == Some(id.as_str());
+                if dc_guild_tile_initial(ui, p, name, selected)
+                    .on_hover_text(name)
+                    .clicked()
+                {
+                    open_guild = Some((id.clone(), name.clone()));
+                }
+                ui.add_space(8.0);
+            }
             if dc_guild_tile(
                 ui,
                 &mut self.dc_textures,
@@ -7335,12 +7511,24 @@ impl UnitedApp {
         if let Some(section) = go {
             self.dc_open(section);
         }
+        if let Some((guild_id, guild_name)) = open_guild {
+            self.dc_open_guild(guild_id, guild_name);
+        }
     }
 
     fn dc_sidebar(&mut self, ui: &mut egui::Ui, p: &Palette) {
+        // Pick up a finished guild-channel fetch without blocking the frame.
+        if let Some(rx) = self.dc_channels_rx.take() {
+            match rx.try_recv() {
+                Ok(channels) => self.dc_channels = channels,
+                Err(std::sync::mpsc::TryRecvError::Empty) => self.dc_channels_rx = Some(rx),
+                Err(std::sync::mpsc::TryRecvError::Disconnected) => {}
+            }
+        }
         let full = ui.max_rect();
         let mut go = None;
         let mut open_chat = None;
+        let mut open_channel = None;
         let mut focus_search = false;
         let mut settings = false;
         Frame::new()
@@ -7377,6 +7565,75 @@ impl UnitedApp {
                     field.request_focus();
                 }
                 ui.add_space(8.0);
+                if self.dc_guild.is_some() {
+                    let guild_name = self
+                        .dc_guild_name
+                        .clone()
+                        .unwrap_or_else(|| "Server".into());
+                    ui.add_space(6.0);
+                    ui.label(
+                        RichText::new(&guild_name)
+                            .font(theme::semibold(15.0))
+                            .color(p.text),
+                    );
+                    ui.add_space(10.0);
+                    ui.label(
+                        RichText::new("TEXT CHANNELS")
+                            .font(theme::semibold(11.0))
+                            .color(p.text_muted),
+                    );
+                    ui.add_space(4.0);
+                    let query = self.search.trim().to_lowercase();
+                    let channels: Vec<(String, String)> = self
+                        .dc_channels
+                        .iter()
+                        .filter(|(_, name)| {
+                            query.is_empty() || name.to_lowercase().contains(&query)
+                        })
+                        .cloned()
+                        .collect();
+                    if channels.is_empty() {
+                        let empty = if self.dc_channels_rx.is_some() {
+                            "Loading channels…"
+                        } else {
+                            "No text channels"
+                        };
+                        ui.add_space(24.0);
+                        ui.vertical_centered(|ui| {
+                            ui.label(
+                                RichText::new(empty)
+                                    .font(theme::medium(13.0))
+                                    .color(p.text_muted),
+                            );
+                        });
+                    } else {
+                        let list_h = (full.bottom() - 76.0 - ui.cursor().min.y).max(80.0);
+                        ScrollArea::vertical()
+                            .id_salt("dc-guild-channels")
+                            .max_height(list_h)
+                            .auto_shrink([false, false])
+                            .show(ui, |ui| {
+                                ui.spacing_mut().item_spacing.y = 0.0;
+                                for (id, name) in &channels {
+                                    let selected = self
+                                        .active_chat
+                                        .get(&Service::Discord)
+                                        .is_some_and(|(_, cid)| cid == id);
+                                    if dc_nav_row(
+                                        ui,
+                                        &mut self.dc_textures,
+                                        p,
+                                        icons::DcIcon::Message,
+                                        name,
+                                        selected,
+                                    ) {
+                                        open_channel = Some((id.clone(), name.clone()));
+                                    }
+                                }
+                            });
+                    }
+                    return;
+                }
                 if dc_nav_row(
                     ui,
                     &mut self.dc_textures,
@@ -7570,7 +7827,9 @@ impl UnitedApp {
         if focus_search {
             ui.memory_mut(|m| m.request_focus(egui::Id::new("dc-search")));
         }
-        if let Some(chat) = open_chat {
+        if let Some((id, name)) = open_channel {
+            self.dc_open_channel(id, name);
+        } else if let Some(chat) = open_chat {
             self.dc_section = DcSection::Chat;
             self.open_chat(chat);
         } else if let Some(section) = go {
@@ -7657,6 +7916,7 @@ impl UnitedApp {
             .frame(Frame::new().fill(p.chat_bg))
             .show(ui, |ui| match self.dc_section {
                 DcSection::Friends => self.dc_friends(ui, &p),
+                DcSection::Guild => self.dc_guild_page(ui, &p),
                 DcSection::Chat => {}
                 section => {
                     let back = dc_info_page(ui, &mut self.dc_textures, &p, section);
@@ -7665,6 +7925,52 @@ impl UnitedApp {
                     }
                 }
             });
+    }
+
+    /// Landing pane for a server whose channel list sits in the sidebar.
+    /// Discord restores the last channel; United keeps the choice explicit
+    /// instead of guessing which channel the bot should open.
+    fn dc_guild_page(&mut self, ui: &mut egui::Ui, p: &Palette) {
+        let name = self
+            .dc_guild_name
+            .clone()
+            .unwrap_or_else(|| "Server".into());
+        let loading = self.dc_channels_rx.is_some() && self.dc_channels.is_empty();
+        let count = self.dc_channels.len();
+        ui.add_space(90.0);
+        ui.vertical_centered(|ui| {
+            let (rect, _) = ui.allocate_exact_size(Vec2::splat(64.0), Sense::hover());
+            let first = name.chars().next().unwrap_or('?');
+            let initial = first.to_uppercase().next().unwrap_or(first);
+            ui.painter()
+                .rect_filled(rect, CornerRadius::same(20), p.hover);
+            ui.painter().text(
+                rect.center(),
+                egui::Align2::CENTER_CENTER,
+                initial,
+                theme::semibold(26.0),
+                p.text,
+            );
+            ui.add_space(14.0);
+            ui.label(
+                RichText::new(&name)
+                    .font(theme::semibold(20.0))
+                    .color(p.text),
+            );
+            ui.add_space(8.0);
+            let hint = if loading {
+                "Loading channels…".to_string()
+            } else if count == 0 {
+                "This bot cannot see any text channels in this server.".to_string()
+            } else {
+                format!("Choose one of the {count} text channels on the left.")
+            };
+            ui.label(
+                RichText::new(hint)
+                    .font(theme::regular(13.5))
+                    .color(p.text_muted),
+            );
+        });
     }
 
     fn dc_friends(&mut self, ui: &mut egui::Ui, p: &Palette) {
@@ -8572,7 +8878,16 @@ impl UnitedApp {
                                     self.typing.remove(&key);
                                 }
                                 let presence = self.presence.get(&key).copied();
-                                let sub = if let Some((online, last_seen)) = presence {
+                                // A guild channel is not a person: show its
+                                // server instead of a bogus presence line.
+                                let guild_channel = service == Service::Discord
+                                    && self.dc_guild.is_some()
+                                    && self.dc_channels.iter().any(|(id, _)| id == &chat.id);
+                                let sub = if guild_channel {
+                                    self.dc_guild_name
+                                        .clone()
+                                        .unwrap_or_else(|| "Server channel".into())
+                                } else if let Some((online, last_seen)) = presence {
                                     if online {
                                         "Online".to_string()
                                     } else if let Some(at) = last_seen {
@@ -10716,6 +11031,11 @@ impl UnitedApp {
                                 "4",
                                 "Paste the token above. United reads servers and channels \
                                  the bot can already see.",
+                            ),
+                            (
+                                "5",
+                                "In Bot \u{203a} Privileged Gateway Intents, enable Message \
+                                 Content Intent so guild message text arrives.",
                             ),
                         ] {
                             ui.horizontal_wrapped(|ui| {

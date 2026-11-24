@@ -84,6 +84,19 @@ pub trait Adapter: Send + Sync {
         Ok(())
     }
 
+    /// Servers the adapter can see as `(guild_id, guild_name)`, in API order.
+    /// Empty for services without a server concept or for adapters that never
+    /// fetched them.
+    fn guilds(&self) -> Vec<(String, String)> {
+        Vec::new()
+    }
+
+    /// Text channels in one server, as `(channel_id, channel_name)`. Empty
+    /// when the server is unknown or the adapter has no channel listing.
+    async fn guild_channels(&self, _guild_id: &str) -> Result<Vec<(String, String)>> {
+        Ok(Vec::new())
+    }
+
     /// Canonical group subject, for a chat stored under a placeholder name
     /// like `Group 62812…-1618833664`. `None` when the protocol has no better
     /// name (or the chat is not a group).

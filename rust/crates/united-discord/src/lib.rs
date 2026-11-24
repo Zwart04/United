@@ -18,6 +18,13 @@ use united_core::{Adapter, AuthInput, EventBus};
 
 const API: &str = "https://discord.com/api/v9";
 
+/// GUILDS, GUILD_MESSAGES, DIRECT_MESSAGES, MESSAGE_CONTENT,
+/// GUILD_MESSAGE_REACTIONS, DIRECT_MESSAGE_REACTIONS,
+/// GUILD_MESSAGE_TYPING and DIRECT_MESSAGE_TYPING.
+const DISCORD_INTENTS: u64 =
+    (1 << 0) | (1 << 9) | (1 << 12) | (1 << 15) | (1 << 10) | (1 << 13) | (1 << 11) | (1 << 14);
+const MESSAGE_CONTENT_INTENT: u64 = 1 << 15;
+
 pub struct DiscordAdapter {
     client: reqwest::Client,
     bus: Mutex<Option<EventBus>>,
@@ -27,6 +34,7 @@ pub struct DiscordAdapter {
     me_name: Arc<Mutex<String>>,
     shutdown: watch::Sender<bool>,
     task: Mutex<Option<tokio::task::JoinHandle<()>>>,
+    guilds: Arc<Mutex<Vec<(String, String)>>>,
 }
 
 impl DiscordAdapter {
@@ -43,6 +51,7 @@ impl DiscordAdapter {
             me_name: Arc::new(Mutex::new("Discord".into())),
             shutdown: watch::channel(false).0,
             task: Mutex::new(None),
+            guilds: Arc::new(Mutex::new(Vec::new())),
         }
     }
 
@@ -116,6 +125,47 @@ impl DiscordAdapter {
         Ok(value.as_array().cloned().unwrap_or_default())
     }
 
+    async fn fetch_guilds(client: &reqwest::Client, token: &str) -> Result<Vec<(String, String)>> {
+        let resp = client
+            .get(format!("{API}/users/@me/guilds"))
+            .header("Authorization", format!("Bot {token}"))
+            .send()
+            .await?;
+        if !resp.status().is_success() {
+            return Err(anyhow!("guilds: {}", resp.status()));
+        }
+        let value: Value = resp.json().await?;
+        Ok(value
+            .as_array()
+            .map(|rows| {
+                rows.iter()
+                    .filter_map(|g| {
+                        let id = g["id"].as_str()?.to_string();
+                        let name = g["name"].as_str()?.to_string();
+                        Some((id, name))
+                    })
+                    .collect()
+            })
+            .unwrap_or_default())
+    }
+
+    async fn fetch_guild_channels(
+        client: &reqwest::Client,
+        token: &str,
+        guild_id: &str,
+    ) -> Result<Vec<Value>> {
+        let resp = client
+            .get(format!("{API}/guilds/{guild_id}/channels"))
+            .header("Authorization", format!("Bot {token}"))
+            .send()
+            .await?;
+        if !resp.status().is_success() {
+            return Err(anyhow!("guild channels: {}", resp.status()));
+        }
+        let value: Value = resp.json().await?;
+        Ok(value.as_array().cloned().unwrap_or_default())
+    }
+
     async fn fetch_messages(
         client: &reqwest::Client,
         token: &str,
@@ -173,6 +223,9 @@ impl Adapter for DiscordAdapter {
         *self.bus.lock().unwrap() = Some(bus.clone());
         if let Some(token) = Self::load_token() {
             *self.token.lock().unwrap() = Some(token.clone());
+            if let Ok(guilds) = Self::fetch_guilds(&self.client, &token).await {
+                *self.guilds.lock().unwrap() = guilds;
+            }
             self.set_status(ServiceStatus::Connecting, None);
             self.spawn_gateway(token);
         } else {
@@ -205,6 +258,10 @@ impl Adapter for DiscordAdapter {
         *self.me_name.lock().unwrap() = name;
         Self::save_token(&token)?;
         *self.token.lock().unwrap() = Some(token.clone());
+        // Fetch the user's guilds so the UI can display them.
+        if let Ok(guilds) = Self::fetch_guilds(&self.client, &token).await {
+            *self.guilds.lock().unwrap() = guilds;
+        }
         *self.prompt.lock().unwrap() = None;
         self.stop_task();
         self.set_status(ServiceStatus::Connecting, None);
@@ -346,6 +403,7 @@ impl Adapter for DiscordAdapter {
     async fn logout(&self) -> Result<()> {
         self.stop_task();
         *self.token.lock().unwrap() = None;
+        self.guilds.lock().unwrap().clear();
         let _ = std::fs::remove_file(Self::token_path());
         self.set_status(ServiceStatus::SignedOut, Some("signed out".into()));
         Ok(())
@@ -390,6 +448,31 @@ impl Adapter for DiscordAdapter {
         Ok(())
     }
 
+    fn guilds(&self) -> Vec<(String, String)> {
+        self.guilds.lock().unwrap().clone()
+    }
+
+    async fn guild_channels(&self, guild_id: &str) -> Result<Vec<(String, String)>> {
+        let token = self
+            .token
+            .lock()
+            .unwrap()
+            .clone()
+            .ok_or_else(|| anyhow!("not signed in"))?;
+        let raw = Self::fetch_guild_channels(&self.client, &token, guild_id).await?;
+        Ok(raw
+            .iter()
+            .filter_map(|c| {
+                let id = c["id"].as_str()?.to_string();
+                let name = c["name"].as_str()?.to_string();
+                // type 0 = text, 5 = announcement; voice, forums and stage
+                // channels are not readable message channels here.
+                let kind = c["type"].as_u64().unwrap_or(1);
+                (kind == 0 || kind == 5).then_some((id, name))
+            })
+            .collect())
+    }
+
     async fn shutdown(&self) {
         self.stop_task();
     }
@@ -403,10 +486,11 @@ impl DiscordAdapter {
         let client = self.client.clone();
         let account = self.account.clone();
         let me_name = self.me_name.clone();
+        let guilds = self.guilds.clone();
         let _ = self.shutdown.send(false);
         let shutdown = self.shutdown.subscribe();
         let handle = tokio::spawn(async move {
-            gateway_loop(client, token, bus, account, me_name, shutdown).await;
+            gateway_loop(client, token, bus, account, me_name, guilds, shutdown).await;
         });
         *self.task.lock().unwrap() = Some(handle);
     }
@@ -486,14 +570,30 @@ async fn gateway_loop(
     bus: EventBus,
     account: std::sync::Arc<Mutex<String>>,
     me_name: std::sync::Arc<Mutex<String>>,
+    guilds: std::sync::Arc<Mutex<Vec<(String, String)>>>,
     mut shutdown: watch::Receiver<bool>,
 ) {
     let mut backoff = 2u64;
+    // MESSAGE_CONTENT is a privileged intent. Request it first, then drop it
+    // once if Discord closes with 4014 so the bot can still connect on servers
+    // where the intent has not been enabled in the Developer Portal.
+    let mut message_content = true;
     loop {
         if *shutdown.borrow() {
             return;
         }
-        match gateway_once(&client, &token, &bus, &account, &me_name, &mut shutdown).await {
+        match gateway_once(
+            &client,
+            &token,
+            &bus,
+            &account,
+            &me_name,
+            &guilds,
+            &mut shutdown,
+            &mut message_content,
+        )
+        .await
+        {
             Ok(()) => backoff = 2,
             Err(err) => {
                 log::warn!("discord gateway: {err:#}");
@@ -519,7 +619,9 @@ async fn gateway_once(
     bus: &EventBus,
     account: &std::sync::Arc<Mutex<String>>,
     me_name: &std::sync::Arc<Mutex<String>>,
+    guilds: &std::sync::Arc<Mutex<Vec<(String, String)>>>,
     shutdown: &mut watch::Receiver<bool>,
+    message_content: &mut bool,
 ) -> Result<()> {
     let info: Value = client
         .get(format!("{API}/gateway"))
@@ -551,7 +653,18 @@ async fn gateway_once(
                 let text = match frame {
                     WsMessage::Text(t) => t.to_string(),
                     WsMessage::Binary(b) => String::from_utf8_lossy(&b).to_string(),
-                    WsMessage::Close(_) => return Ok(()),
+                    WsMessage::Close(frame) => {
+                        if let Some(frame) = frame
+                            && u16::from(frame.code) == 4014
+                            && *message_content
+                        {
+                            *message_content = false;
+                            log::warn!(
+                                "discord gateway rejected MESSAGE_CONTENT; retrying without it"
+                            );
+                        }
+                        return Ok(());
+                    }
                     _ => continue,
                 };
                 let value: Value = match serde_json::from_str(&text) {
@@ -565,16 +678,21 @@ async fn gateway_once(
                     10 => {
                         let interval = value["d"]["heartbeat_interval"].as_u64().unwrap_or(41250);
                         heartbeat = tokio::time::interval(std::time::Duration::from_millis(interval));
+                        let intents = if *message_content {
+                            DISCORD_INTENTS
+                        } else {
+                            DISCORD_INTENTS & !MESSAGE_CONTENT_INTENT
+                        };
                         let identify = json!({
                             "op": 2,
                             "d": {
                                 "token": token,
-                                "capabilities": 16381,
+                                "intents": intents,
                                 "compress": false,
                                 "properties": {
                                     "os": "Linux",
-                                    "browser": "Chrome",
-                                    "device": ""
+                                    "browser": "United",
+                                    "device": "United"
                                 },
                                 "presence": {"status": "online", "since": 0, "activities": [], "afk": false}
                             }
@@ -679,6 +797,32 @@ async fn gateway_once(
                                 };
                                 bus.publish(CoreEvent::Message { message, live: true });
                             }
+                            "GUILD_CREATE" => {
+                                if let (Some(id), Some(name)) =
+                                    (data["id"].as_str(), data["name"].as_str())
+                                {
+                                    let mut list = guilds.lock().unwrap();
+                                    if let Some(row) =
+                                        list.iter_mut().find(|(gid, _)| gid == id)
+                                    {
+                                        row.1 = name.to_string();
+                                    } else {
+                                        list.push((id.to_string(), name.to_string()));
+                                    }
+                                }
+                            }
+                            "GUILD_DELETE" => {
+                                // An unavailable guild (Discord outage) is not
+                                // a removal; keep it in the rail until Discord
+                                // sends a real delete.
+                                let unavailable =
+                                    data["unavailable"].as_bool().unwrap_or(false);
+                                if let Some(id) = data["id"].as_str()
+                                    && !unavailable
+                                {
+                                    guilds.lock().unwrap().retain(|(gid, _)| gid != id);
+                                }
+                            }
                             "CHANNEL_CREATE" | "CHANNEL_UPDATE" => {
                                 if let Some(chat) = channel_to_chat(data, account) {
                                     bus.publish(CoreEvent::ChatUpsert { chat });
@@ -732,8 +876,8 @@ async fn sync_channels(
 fn channel_to_chat(value: &Value, account: &std::sync::Arc<Mutex<String>>) -> Option<Chat> {
     let id = value["id"].as_str()?.to_string();
     let kind = value["type"].as_u64().unwrap_or(1);
-    // 1 = DM, 3 = group DM. Servers (guild channels) are out of scope for the
-    // inbox and need a separate channel tree.
+    // 1 = DM, 3 = group DM. Guild channels are not inbox rows; the guild
+    // sidebar lists them from `GET /guilds/{id}/channels`.
     if kind != 1 && kind != 3 {
         return None;
     }
